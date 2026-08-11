@@ -251,6 +251,12 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B93A1" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input id="search-input" placeholder="搜尋保單號碼／姓名" oninput="renderList()" />
         </div>
+        <div id="segment-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
+      </div>
+      <div class="search-wrap" style="display:flex; gap:6px;">
+        <button class="btn btn-ghost" style="flex:1; justify-content:center; border:1px solid var(--line); font-size:11px; padding:6px;" onclick="exportCSV()">匯出 CSV</button>
+        <button class="btn btn-ghost" style="flex:1; justify-content:center; border:1px solid var(--line); font-size:11px; padding:6px;" onclick="document.getElementById('csv-input').click()">匯入 CSV</button>
+        <input type="file" id="csv-input" accept=".csv" style="display:none;" onchange="handleCsvImport(event)" />
       </div>
       <div id="list"></div>
     </aside>
@@ -289,6 +295,26 @@
 </div>
 <style>@keyframes spin{ to{ transform:rotate(360deg); } }</style>
 
+<div id="batch-overlay" style="display:none; position:fixed; inset:0; background:rgba(22,35,58,.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#FBFAF6; border-radius:14px; padding:20px; width:100%; max-width:340px; box-shadow:0 20px 50px rgba(0,0,0,.3);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span id="batch-progress" style="font-size:11px; color:#8B93A1;">1 / 1</span>
+      <button class="btn btn-ghost" style="padding:4px;" onclick="closeBatchStepper()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B93A1" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <p id="batch-name" class="serif" style="margin:0 0 8px; font-size:16px; font-weight:700; color:#16233A;">—</p>
+    <p id="batch-msg-preview" style="margin:0 0 16px; font-size:12px; color:#4A5266; background:#F6F4EC; border-radius:8px; padding:10px; white-space:pre-wrap;"></p>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-primary" style="flex:1; justify-content:center;" onclick="batchSendCurrent()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        用 LINE 傳送
+      </button>
+      <button class="btn btn-dark" onclick="batchNext()" id="batch-next-btn">下一位</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const STORAGE_KEY = 'insurance_policies_v2';
 const REMIND_WINDOW_DAYS = 30; // days ahead to flag birthdays / health-check / renewal
@@ -311,7 +337,8 @@ function emptyPolicy(){
     birthday:'', phone:'',
     payChannel:'', bank:'', cardLast4:'', cardExpiry:'', nextDueDate:'', nextDeductDate:'',
     lastCheckDate:'', nextCheckDate:'', checkNotes:'',
-    coverages:[emptyCoverage()], beneficiaries:[emptyBeneficiary()], logs:[], notes:''
+    coverages:[emptyCoverage()], beneficiaries:[emptyBeneficiary()], logs:[], notes:'',
+    contactedFor:{ birthday:'', check:'', renew:'' }
   };
 }
 
@@ -332,6 +359,7 @@ function loadData(){
         if(!('nextCheckDate' in p)) p.nextCheckDate='';
         if(!('checkNotes' in p)) p.checkNotes='';
         if(!('logs' in p)) p.logs=[];
+        if(!('contactedFor' in p)) p.contactedFor={ birthday:'', check:'', renew:'' };
       });
       if(policies.length) selectedId = policies[0].id;
     } else {
@@ -377,6 +405,27 @@ function statusPill(status){
   return `<span class="pill ${ok?'pill-ok':'pill-bad'}"><span class="dot ${ok?'dot-ok':'dot-bad'}"></span>${esc(status||'未設定')}</span>`;
 }
 
+/* ---- marketing segmentation: VIP / coverage-gap tags computed from policy data ---- */
+const VIP_PREMIUM_THRESHOLD = 30000;
+const SEGMENT_DEFS = [
+  { key:'vip', label:'VIP高保費', tone:'gold', test:p=> totalPremium(p) >= VIP_PREMIUM_THRESHOLD },
+  { key:'gap-life', label:'缺壽險保障', tone:'warn', test:p=> !/壽險|終身|生存/.test(coverageNamesText(p)) },
+  { key:'gap-medical', label:'缺醫療保障', tone:'warn', test:p=> !/醫療|住院/.test(coverageNamesText(p)) },
+  { key:'gap-accident', label:'缺意外保障', tone:'warn', test:p=> !/意外/.test(coverageNamesText(p)) },
+  { key:'gap-ltc', label:'缺長照/重大傷病', tone:'warn', test:p=> !/長照|失能|重大傷病|防癌|癌症/.test(coverageNamesText(p)) },
+];
+function coverageNamesText(p){
+  return (p.coverages||[]).map(c=>c.name||'').join(' ');
+}
+function computeInsightTags(p){
+  if(!(p.coverages||[]).some(c=>c.name)) return []; // no coverage data entered yet — nothing to infer
+  return SEGMENT_DEFS.filter(seg=>seg.test(p));
+}
+function segmentTagHtml(tag){
+  const cls = tag.tone==='gold' ? 'pill-warn' : 'pill-bad';
+  return `<span class="pill ${cls}" style="${tag.tone==='gold' ? 'background:#FCF3DE;color:#9A7511;' : ''}">${esc(tag.label)}</span>`;
+}
+
 /* ---- date helpers for reminders ---- */
 function parseDateFlexible(str){
   // accepts YYYY/MM/DD, YYYY-MM-DD, MM/DD, MM-DD
@@ -406,6 +455,10 @@ function daysUntilFixedDate(dateObj){
   return Math.round((target - today) / 86400000);
 }
 
+function isContacted(p, kind, dateValue){
+  return !!(p.contactedFor && p.contactedFor[kind] && dateValue && p.contactedFor[kind] === dateValue);
+}
+
 function getReminders(){
   const birthdayList = [];
   const checkList = [];
@@ -415,21 +468,21 @@ function getReminders(){
     if(bd){
       const days = daysUntilNextOccurrence(bd);
       if(days !== null && days <= REMIND_WINDOW_DAYS){
-        birthdayList.push({ p, days });
+        birthdayList.push({ p, days, kind:'birthday', done: isContacted(p,'birthday',p.birthday) });
       }
     }
     const nc = parseDateFlexible(p.nextCheckDate);
     if(nc){
       const days = daysUntilFixedDate(nc);
       if(days !== null && days <= REMIND_WINDOW_DAYS){
-        checkList.push({ p, days });
+        checkList.push({ p, days, kind:'check', done: isContacted(p,'check',p.nextCheckDate) });
       }
     }
     const nd = parseDateFlexible(p.nextDueDate);
     if(nd){
       const days = daysUntilFixedDate(nd);
       if(days !== null && days <= REMIND_WINDOW_DAYS){
-        renewalList.push({ p, days });
+        renewalList.push({ p, days, kind:'renew', done: isContacted(p,'renew',p.nextDueDate) });
       }
     }
   });
@@ -458,15 +511,41 @@ function switchTab(tab){
 }
 
 /* ---------- list / sidebar ---------- */
+let activeSegmentFilter = null;
+
+function renderSegmentChips(){
+  const chipsEl = document.getElementById('segment-chips');
+  if(!chipsEl) return;
+  const counts = {};
+  SEGMENT_DEFS.forEach(seg=> counts[seg.key] = 0);
+  policies.forEach(p=> computeInsightTags(p).forEach(tag=>{
+    const seg = SEGMENT_DEFS.find(s=>s.label===tag.label);
+    if(seg) counts[seg.key]++;
+  }));
+  chipsEl.innerHTML = SEGMENT_DEFS.map(seg=>{
+    const active = activeSegmentFilter === seg.key;
+    const bg = active ? (seg.tone==='gold' ? '#C9A227' : '#2F6F62') : '#fff';
+    const color = active ? '#fff' : '#4A5266';
+    return `<button onclick="toggleSegmentFilter('${seg.key}')" style="border:1px solid ${active?'transparent':'var(--line)'}; background:${bg}; color:${color}; border-radius:999px; padding:4px 10px; font-size:11px; cursor:pointer; font-family:inherit;">${esc(seg.label)} (${counts[seg.key]})</button>`;
+  }).join('');
+}
+function toggleSegmentFilter(key){
+  activeSegmentFilter = activeSegmentFilter === key ? null : key;
+  renderList();
+}
+
 function renderList(){
   const q = document.getElementById('search-input').value.trim().toLowerCase();
   const listEl = document.getElementById('list');
   const { birthdayList, checkList, renewalList } = getReminders();
-  const flagIds = new Set([...birthdayList, ...checkList, ...renewalList].map(x=>x.p.id));
+  const flagIds = new Set([...birthdayList, ...checkList, ...renewalList].filter(x=>!x.done).map(x=>x.p.id));
+
+  renderSegmentChips();
 
   const filtered = policies.filter(p=>{
-    if(!q) return true;
-    return [p.policyNumber,p.insured,p.applicant,p.insurer].some(v=> (v||'').toLowerCase().includes(q));
+    if(q && ![p.policyNumber,p.insured,p.applicant,p.insurer].some(v=> (v||'').toLowerCase().includes(q))) return false;
+    if(activeSegmentFilter && !computeInsightTags(p).some(t=> SEGMENT_DEFS.find(s=>s.key===activeSegmentFilter && s.label===t.label))) return false;
+    return true;
   });
 
   if(filtered.length === 0){
@@ -514,44 +593,175 @@ function openLineShare(evt, text){
   evt.stopPropagation();
   window.open(lineShareUrl(text), '_blank');
 }
-function reminderMessage(kind, p){
-  if(kind==='birthday') return `${p.insured} 您好，喬鈺提醒您生日快樂！祝您身體健康，若有保障需求歡迎隨時找我聊聊 🎂`;
-  if(kind==='check') return `${p.insured} 您好，您的保單（${p.policyNumber}）建議安排一次保單健檢，確認保障是否還符合現在的需求，方便的話約個時間聊聊嗎？`;
-  if(kind==='renew') return `${p.insured} 您好，提醒您保單（${p.policyNumber}）下期應繳日為 ${p.nextDueDate}，預計扣款日 ${p.nextDeductDate}，請留意帳戶餘額，謝謝！`;
-  return '';
+
+/* ---- message template library for marketing outreach ---- */
+const MESSAGE_TEMPLATES = {
+  birthday: [
+    p=>`${p.insured} 您好，喬鈺祝您生日快樂！祝您身體健康、平安順心，若想聊聊保障規劃歡迎隨時找我 🎂`,
+    p=>`${p.insured} 生日快樂！趁生日也提醒您，保障需求會隨年紀增加而改變，要不要幫您安排一次保單健檢？`
+  ],
+  check: [
+    p=>`${p.insured} 您好，您的保單（${p.policyNumber}）建議安排一次保單健檢，確認保障是否還符合現在的需求，方便的話約個時間聊聊嗎？`,
+    p=>`${p.insured} 您好，最近商品/政策有些更新，想幫您重新檢視保單（${p.policyNumber}）保障是否足夠，方便什麼時候聊一下？`
+  ],
+  renew: [
+    p=>`${p.insured} 您好，提醒您保單（${p.policyNumber}）下期應繳日為 ${p.nextDueDate}，預計扣款日 ${p.nextDeductDate}，請留意帳戶餘額，謝謝！`,
+    p=>`${p.insured} 您好，您的保單（${p.policyNumber}）即將於 ${p.nextDueDate} 續期，如需調整保障內容歡迎跟我聯絡～`
+  ]
+};
+const MESSAGE_TEMPLATE_LABELS = {
+  birthday: ['祝賀＋開放式邀約','祝賀＋健檢切入'],
+  check: ['直接建議健檢','政策更新切入'],
+  renew: ['提醒繳費','提醒＋加保機會']
+};
+function reminderMessage(kind, p, variantIdx){
+  const idx = variantIdx || 0;
+  const list = MESSAGE_TEMPLATES[kind];
+  if(!list) return '';
+  const fn = list[idx] || list[0];
+  return fn(p);
 }
+
+/* ---- task state: which template variant, done-list visibility, batch selection ---- */
+let templateChoice = { birthday:0, check:0, renew:0 };
+let showDone = { birthday:false, check:false, renew:false };
+let batchSelected = { birthday:new Set(), check:new Set(), renew:new Set() };
+
+function setTemplateChoice(kind, idx){ templateChoice[kind] = +idx; renderMain(); }
+function toggleShowDone(kind){ showDone[kind] = !showDone[kind]; renderMain(); }
+function toggleBatchSelect(kind, policyId, checked){
+  if(checked) batchSelected[kind].add(policyId); else batchSelected[kind].delete(policyId);
+  renderMain();
+}
+function markContacted(evt, policyId, kind){
+  if(evt) evt.stopPropagation();
+  const p = policies.find(x=>x.id===policyId);
+  if(!p) return;
+  if(!p.contactedFor) p.contactedFor = { birthday:'', check:'', renew:'' };
+  const valueMap = { birthday:p.birthday, check:p.nextCheckDate, renew:p.nextDueDate };
+  p.contactedFor[kind] = valueMap[kind] || 'done';
+  saveData();
+  batchSelected[kind].delete(policyId);
+  renderList();
+  renderMain();
+}
+function unmarkContacted(evt, policyId, kind){
+  if(evt) evt.stopPropagation();
+  const p = policies.find(x=>x.id===policyId);
+  if(!p || !p.contactedFor) return;
+  p.contactedFor[kind] = '';
+  saveData();
+  renderList();
+  renderMain();
+}
+
+/* ---- batch send stepper ---- */
+let batchQueue = [];
+let batchIndex = 0;
+function startBatchSend(evt, kind){
+  if(evt) evt.stopPropagation();
+  const ids = Array.from(batchSelected[kind]);
+  if(ids.length===0) return;
+  batchQueue = ids.map(id=>({ p: policies.find(x=>x.id===id), kind })).filter(x=>x.p);
+  batchIndex = 0;
+  if(batchQueue.length===0) return;
+  renderBatchStepper();
+  document.getElementById('batch-overlay').style.display = 'flex';
+}
+function renderBatchStepper(){
+  const item = batchQueue[batchIndex];
+  const msg = reminderMessage(item.kind, item.p, templateChoice[item.kind]);
+  document.getElementById('batch-progress').textContent = `${batchIndex+1} / ${batchQueue.length}`;
+  document.getElementById('batch-name').textContent = item.p.insured || '—';
+  document.getElementById('batch-msg-preview').textContent = msg;
+  document.getElementById('batch-next-btn').textContent = (batchIndex < batchQueue.length-1) ? '下一位' : '完成';
+}
+function batchSendCurrent(){
+  const item = batchQueue[batchIndex];
+  const msg = reminderMessage(item.kind, item.p, templateChoice[item.kind]);
+  window.open(lineShareUrl(msg), '_blank');
+  markContacted(null, item.p.id, item.kind);
+}
+function batchNext(){
+  if(batchIndex < batchQueue.length-1){ batchIndex++; renderBatchStepper(); }
+  else { closeBatchStepper(); }
+}
+function closeBatchStepper(){
+  document.getElementById('batch-overlay').style.display = 'none';
+  batchQueue = []; batchIndex = 0;
+  renderMain();
+}
+
 function reminderGroupHtml(title, iconSvg, items, sublineFn, kind){
-  if(items.length===0){
+  const pending = items.filter(it=>!it.done);
+  const done = items.filter(it=>it.done);
+  const selectedCount = batchSelected[kind].size;
+  const variants = MESSAGE_TEMPLATE_LABELS[kind] || [];
+
+  const templateSelect = variants.length ? `
+    <select onchange="setTemplateChoice('${kind}', this.value)" style="font-size:11px; border:1px solid var(--line); border-radius:6px; padding:3px 6px; background:#fff; color:var(--muted);">
+      ${variants.map((label,i)=>`<option value="${i}" ${templateChoice[kind]===i?'selected':''}>${esc(label)}</option>`).join('')}
+    </select>` : '';
+
+  if(pending.length===0 && done.length===0){
     return `<div class="section-card">
       <div class="section-head">${iconSvg}<h2 class="serif">${title}</h2></div>
       <p style="color:var(--muted); font-size:13px; margin:0;">近 ${REMIND_WINDOW_DAYS} 天內無提醒事項</p>
     </div>`;
   }
-  const rows = items.map(({p,days})=>{
+
+  function rowHtml({p,days,kind:k,done:isDone}){
     const overdue = days < 0;
-    const msg = reminderMessage(kind, p).replace(/'/g, "\\'");
-    return `<div class="reminder-row" onclick="selectPolicy('${p.id}')">
-      <div>
-        <div class="reminder-name">${esc(p.insured)||'—'}</div>
-        <div class="reminder-sub">${sublineFn(p)}</div>
+    const checked = batchSelected[k].has(p.id);
+    return `<div class="reminder-row" style="${isDone?'opacity:.55;':''}" onclick="selectPolicy('${p.id}')">
+      <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+        ${!isDone ? `<input type="checkbox" onclick="event.stopPropagation()" onchange="toggleBatchSelect('${k}','${p.id}', this.checked)" ${checked?'checked':''} style="width:16px; height:16px; flex-shrink:0;" />` : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2" style="flex-shrink:0;"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`}
+        <div style="min-width:0;">
+          <div class="reminder-name">${esc(p.insured)||'—'}</div>
+          <div class="reminder-sub">${sublineFn(p)}</div>
+        </div>
       </div>
-      <div style="display:flex; align-items:center; gap:8px;">
+      <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
         <span class="pill ${overdue?'pill-bad':'pill-warn'}"><span class="dot ${overdue?'dot-bad':'dot-warn'}"></span>${daysLabel(days)}</span>
-        <button class="btn btn-ghost" style="padding:6px 8px; font-size:11px;" onclick="openLineShare(event, '${msg}')" title="用 LINE 傳送提醒">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        </button>
+        ${isDone
+          ? `<button class="btn btn-ghost" style="padding:6px 8px; font-size:11px;" onclick="unmarkContacted(event,'${p.id}','${k}')" title="取消標記">↺</button>`
+          : `<button class="btn btn-ghost" style="padding:6px 8px; font-size:11px;" onclick="markContacted(event,'${p.id}','${k}')" title="標記已聯絡">
+               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+             </button>
+             <button class="btn btn-ghost" style="padding:6px 8px; font-size:11px;" onclick="openLineShare(event, ${esc(JSON.stringify(reminderMessage(k,p,templateChoice[k])))})" title="用 LINE 傳送提醒">
+               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+             </button>`
+        }
       </div>
     </div>`;
-  }).join('');
+  }
+
   return `<div class="section-card">
-    <div class="section-head">${iconSvg}<h2 class="serif">${title}</h2><span class="subtotal">${items.length} 位</span></div>
-    ${rows}
+    <div class="section-head" style="flex-wrap:wrap; gap:8px;">
+      ${iconSvg}<h2 class="serif">${title}</h2>
+      <span class="subtotal">${pending.length} 待處理</span>
+      ${templateSelect}
+    </div>
+    ${selectedCount>0 ? `
+    <div style="display:flex; align-items:center; justify-content:space-between; background:#EEF3F0; border-radius:8px; padding:8px 10px; margin-bottom:8px; font-size:12px;">
+      <span>已選 ${selectedCount} 位</span>
+      <button class="btn btn-primary" style="padding:6px 10px; font-size:12px;" onclick="startBatchSend(event,'${kind}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        開始批次傳送
+      </button>
+    </div>` : ''}
+    ${pending.map(rowHtml).join('') || '<p style="color:var(--muted); font-size:13px; margin:0;">這個分類目前沒有待處理項目</p>'}
+    ${done.length ? `
+    <button class="link-btn" style="margin-top:8px;" onclick="toggleShowDone('${kind}')">${showDone[kind]?'隱藏':'顯示'}已處理（${done.length}）</button>
+    ${showDone[kind] ? done.map(rowHtml).join('') : ''}
+    ` : ''}
   </div>`;
 }
 
 function renderDashboard(){
   const el = document.getElementById('main-content');
   const { birthdayList, checkList, renewalList } = getReminders();
+  const pendingTotal = [birthdayList, checkList, renewalList].reduce((s,list)=> s + list.filter(it=>!it.done).length, 0);
 
   const cakeIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M4 21v-6a4 4 0 014-4h8a4 4 0 014 4v6"/><path d="M2 21h20M12 3v4M8 7c0-1 1-2 1-3s-1-2-1-2M16 7c0-1 1-2 1-3s-1-2-1-2"/></svg>`;
   const checkIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`;
@@ -561,13 +771,15 @@ function renderDashboard(){
   <div class="detail-wrap">
     <div class="dash-grid" style="margin-bottom:16px;">
       <div class="stat-card"><div class="stat-num">${policies.length}</div><div class="stat-label">總客戶保單數</div></div>
-      <div class="stat-card"><div class="stat-num">${birthdayList.length + checkList.length + renewalList.length}</div><div class="stat-label">近 ${REMIND_WINDOW_DAYS} 天待處理提醒</div></div>
+      <div class="stat-card"><div class="stat-num">${pendingTotal}</div><div class="stat-label">近 ${REMIND_WINDOW_DAYS} 天待處理提醒</div></div>
     </div>
     ${reminderGroupHtml('生日提醒', cakeIcon, birthdayList, p=>`生日 ${esc(p.birthday)}・可安排問候或加保建議`, 'birthday')}
     ${reminderGroupHtml('保單健檢提醒', checkIcon, checkList, p=>`預計健檢日 ${esc(p.nextCheckDate)}`, 'check')}
     ${reminderGroupHtml('繳費／續約提醒', renewIcon, renewalList, p=>`下期應繳日 ${esc(p.nextDueDate)}`, 'renew')}
   </div>`;
 }
+
+/* ---------- customer detail ---------- */
 
 /* ---------- customer detail ---------- */
 function renderMain(){
@@ -628,6 +840,7 @@ function renderMain(){
         <div><div class="field-label">保單生效日</div><div class="field-value" style="font-weight:400;">${esc(p.effectiveDate)||'—'}</div></div>
         <div><div class="field-label">主約繳法／墊繳狀態</div><div class="field-value" style="font-weight:400;">${esc(p.payMethod)} ／ ${esc(p.advanceStatus)}</div></div>
       </div>
+      ${computeInsightTags(p).length ? `<div style="padding:0 18px 16px; display:flex; flex-wrap:wrap; gap:6px;">${computeInsightTags(p).map(segmentTagHtml).join('')}</div>` : ''}
     </div>
 
     <div class="section-card">
@@ -706,6 +919,105 @@ function renderMain(){
       <button class="btn btn-dark" onclick="openEditPolicy('${p.id}')">編輯保單</button>
     </div>
   </div>`;
+}
+
+/* ---------- CSV export / import (backup, bulk edit, external tools) ---------- */
+const CSV_COLUMNS = [
+  'policyNumber','insurer','insured','applicant','birthday','phone','currency','coverageUnit',
+  'effectiveDate','status','payMethod','advanceStatus','payChannel','bank','cardLast4','cardExpiry',
+  'nextDueDate','nextDeductDate','lastCheckDate','nextCheckDate','checkNotes','notes',
+  'coveragesJson','beneficiariesJson','logsJson'
+];
+
+function csvField(v){
+  const s = v==null ? '' : String(v);
+  if(/[",\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+
+function exportCSV(){
+  const rows = [CSV_COLUMNS.join(',')];
+  policies.forEach(p=>{
+    const row = CSV_COLUMNS.map(col=>{
+      if(col==='coveragesJson') return csvField(JSON.stringify(p.coverages||[]));
+      if(col==='beneficiariesJson') return csvField(JSON.stringify(p.beneficiaries||[]));
+      if(col==='logsJson') return csvField(JSON.stringify(p.logs||[]));
+      return csvField(p[col]);
+    });
+    rows.push(row.join(','));
+  });
+  const csvContent = '\uFEFF' + rows.join('\r\n'); // BOM so Excel opens Chinese text correctly
+  const blob = new Blob([csvContent], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `保單資料_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function parseCsv(text){
+  // minimal RFC4180-ish CSV parser: handles quoted fields with embedded commas/newlines/escaped quotes
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0; i<text.length; i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(field); field=''; }
+      else if(c === '\r'){ /* skip */ }
+      else if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else field += c;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r=> r.length>1 || (r.length===1 && r[0]!==''));
+}
+
+function handleCsvImport(evt){
+  const file = evt.target.files && evt.target.files[0];
+  evt.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      let text = reader.result;
+      if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // strip BOM
+      const rows = parseCsv(text);
+      if(rows.length < 2){ showError('CSV 內容看起來是空的'); return; }
+      const header = rows[0];
+      const imported = [];
+      for(let r=1; r<rows.length; r++){
+        const cells = rows[r];
+        const obj = {};
+        header.forEach((col,i)=> obj[col] = cells[i] || '');
+        const p = emptyPolicy();
+        CSV_COLUMNS.forEach(col=>{
+          if(col==='coveragesJson'){ try{ p.coverages = JSON.parse(obj[col]||'[]'); }catch(_e){} }
+          else if(col==='beneficiariesJson'){ try{ p.beneficiaries = JSON.parse(obj[col]||'[]'); }catch(_e){} }
+          else if(col==='logsJson'){ try{ p.logs = JSON.parse(obj[col]||'[]'); }catch(_e){} }
+          else if(col in obj) p[col] = obj[col];
+        });
+        if(p.policyNumber || p.insured) imported.push(p);
+      }
+      if(imported.length === 0){ showError('沒有解析到有效的保單資料，請確認 CSV 格式'); return; }
+      policies = imported.concat(policies); // import as new entries, existing data untouched
+      saveData();
+      renderList();
+      renderMain();
+      showError(`已匯入 ${imported.length} 筆保單資料（新增方式加入，未覆蓋原有資料）`);
+    }catch(e){
+      showError('CSV 匯入失敗，請確認檔案格式是否正確');
+    }
+  };
+  reader.readAsText(file, 'utf-8');
 }
 
 function deletePolicy(id){
