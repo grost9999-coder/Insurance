@@ -758,6 +758,17 @@ function renderModalBody(){
       </button>
       <input type="file" id="ocr-input" accept="image/*" multiple style="display:none;" onchange="handleOcrFiles(event)" />
     </div>
+    <div style="border:1px dashed #C7BFA8; border-radius:10px; padding:12px; background:#F6F4EC; margin-bottom:16px;">
+      <p style="margin:0 0 2px; font-size:13px; font-weight:600; color:#16233A;">貼上文字自動帶入</p>
+      <p style="margin:0 0 8px; font-size:11px; color:#8B93A1;">從南山網站頁面複製整段文字貼在這裡，比拍照辨識更準確</p>
+      <textarea id="ocr-text-input" placeholder="在這裡貼上複製的保單頁面文字…" style="width:100%; min-height:70px; border:1px solid #DDD7C9; border-radius:6px; padding:8px 10px; font-size:12px; font-family:inherit; background:#FBFAF6; outline:none; resize:vertical;"></textarea>
+      <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+        <button type="button" class="btn btn-dark" onclick="parseTextInput()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          解析文字並帶入
+        </button>
+      </div>
+    </div>
     ${lastOcrRawText ? `
     <div style="margin:-10px 0 16px;">
       <button type="button" class="link-btn" onclick="const el=document.getElementById('ocr-raw-box'); el.style.display = el.style.display==='none' ? 'block' : 'none';">
@@ -958,6 +969,24 @@ async function preprocessImageForOcr(file){
   }
   ctx.putImageData(imgData, 0, 0);
   return canvas;
+}
+
+function parseTextInput(){
+  const textEl = document.getElementById('ocr-text-input');
+  const val = textEl ? textEl.value : '';
+  if(!val || !val.trim()){
+    showError('請先貼上文字內容再解析');
+    return;
+  }
+  if(!editing){
+    showError('請先開啟新增或編輯保單表單');
+    return;
+  }
+  const parsed = parseOcrText(val);
+  lastOcrRawText = val;
+  mergeOcrIntoEditing(parsed);
+  renderModalBody();
+  showError('已將貼上文字解析出的欄位帶入下方表單，請仔細核對後再儲存');
 }
 
 async function handleOcrFiles(evt){
