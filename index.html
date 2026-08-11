@@ -227,11 +227,6 @@
     </div>
     <div style="display:flex; align-items:center; gap:10px;">
       <span id="saving-indicator" style="display:none; font-size:11px; color:var(--muted);">儲存中…</span>
-      <button class="btn btn-ghost" style="border:1px solid var(--line);" onclick="document.getElementById('ocr-input').click()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16233A" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        拍照／上傳辨識
-      </button>
-      <input type="file" id="ocr-input" accept="image/*" capture="environment" multiple style="display:none;" onchange="handleOcrFiles(event)" />
       <button class="btn btn-primary" onclick="openNewPolicy()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         新增保單
@@ -320,27 +315,7 @@ function emptyPolicy(){
 }
 
 function seedPolicies(){
-  return [{
-    id: uid(), insurer:'南山人壽', policyNumber:'A037030661', currency:'台幣',
-    effectiveDate:'2023/12/05', status:'有效-持續繳費中', payMethod:'年繳', advanceStatus:'無',
-    insured:'黃鈺喬', applicant:'黃瀚本', birthday:'', phone:'',
-    payChannel:'聯名卡-玉山銀行', bank:'玉山銀行', cardLast4:'53', cardExpiry:'12/26',
-    nextDueDate:'2026/12/05', nextDeductDate:'2026/12/07',
-    lastCheckDate:'', nextCheckDate:'', checkNotes:'',
-    coverages:[
-      { id: uid(), name:'南山人壽全心溢靠2醫療保險 (20HPCHI2)', amount:'1單位', status:'有效', effectiveDate:'2023/12/05', premium:'15709' },
-      { id: uid(), name:'南山人壽實踐幸福住院醫療健康保險附約-B型 (1HSB)', amount:'1份', status:'有效', effectiveDate:'2023/12/05', premium:'3271' },
-      { id: uid(), name:'南山人壽意外骨折暨傷害醫療保險附約 (BBMR)', amount:'1份', status:'有效', effectiveDate:'2023/12/05', premium:'1450' },
-      { id: uid(), name:'南山人壽意外傷害醫療日額給付附加條款 (DHI)', amount:'2,000', status:'有效', effectiveDate:'2023/12/05', premium:'1080' },
-      { id: uid(), name:'南山人壽陪童長大意外傷害保險附約-3型 (KPAR3)', amount:'615,000', status:'有效', effectiveDate:'2023/12/05', premium:'609' },
-    ],
-    beneficiaries:[
-      { id: uid(), name:'黃瀚本', rank:'第一順位(均分)' },
-      { id: uid(), name:'江佩芳', rank:'第二順位(均分)' },
-      { id: uid(), name:'法定繼承人', rank:'第三順位(均分)' },
-    ],
-    logs:[], notes:''
-  }];
+  return []; // no pre-filled data — add customers via "新增保單" or "拍照／上傳辨識"
 }
 
 function loadData(){
@@ -770,6 +745,17 @@ function field(label, key, placeholder){
 function renderModalBody(){
   const body = document.getElementById('modal-body');
   body.innerHTML = `
+    <div style="border:1px dashed #C7BFA8; border-radius:10px; padding:12px; background:#F6F4EC; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <div>
+        <p style="margin:0; font-size:13px; font-weight:600; color:#16233A;">拍照／上傳截圖自動帶入</p>
+        <p style="margin:2px 0 0; font-size:11px; color:#8B93A1;">可一次選多張，辨識後請核對再儲存</p>
+      </div>
+      <button type="button" class="btn btn-dark" style="flex-shrink:0;" onclick="document.getElementById('ocr-input').click()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        選擇圖片
+      </button>
+      <input type="file" id="ocr-input" accept="image/*" multiple style="display:none;" onchange="handleOcrFiles(event)" />
+    </div>
     <div class="form-grid">
       ${field('保險公司','insurer')}
       ${field('保單號碼','policyNumber')}
@@ -955,11 +941,26 @@ async function handleOcrFiles(evt){
   overlay.style.display = 'none';
 
   const parsed = parseOcrText(combinedText);
-  editing = Object.assign(emptyPolicy(), parsed);
-  document.getElementById('modal-title').textContent = '確認辨識結果（新增保單）';
+  mergeOcrIntoEditing(parsed);
   renderModalBody();
-  document.getElementById('modal-overlay').style.display = 'flex';
-  showError('已自動帶入可辨識到的欄位，請仔細核對後再儲存（拍照辨識可能有誤植，尤其是險種明細表格）');
+  showError('已將辨識到的欄位帶入下方表單，請仔細核對後再儲存（險種明細等表格類資料辨識率較低，請特別確認）');
+}
+
+function mergeOcrIntoEditing(parsed){
+  if(!editing) return;
+  const scalarKeys = ['policyNumber','currency','status','advanceStatus','insured','applicant','phone',
+    'effectiveDate','payMethod','payChannel','bank','cardLast4','cardExpiry','nextDueDate','nextDeductDate'];
+  scalarKeys.forEach(k=>{
+    if(parsed[k]) editing[k] = parsed[k];
+  });
+  if(parsed.beneficiaries && parsed.beneficiaries.length){
+    const existingBlank = editing.beneficiaries.length===1 && !editing.beneficiaries[0].name;
+    editing.beneficiaries = existingBlank ? parsed.beneficiaries : editing.beneficiaries.concat(parsed.beneficiaries);
+  }
+  if(parsed.coverages && parsed.coverages.length){
+    const existingBlank = editing.coverages.length===1 && !editing.coverages[0].name;
+    editing.coverages = existingBlank ? parsed.coverages : editing.coverages.concat(parsed.coverages);
+  }
 }
 
 function ocrLines(text){
@@ -995,7 +996,7 @@ function parseOcrText(text){
   const out = {};
 
   out.policyNumber = ocrValueAfterLabel(lines, ['保單號碼']).replace(/\s/g,'');
-  out.currency = ocrValueAfterLabel(lines, ['保單幣別']) || '台幣';
+  out.currency = ocrValueAfterLabel(lines, ['保單幣別']);
   out.status = ocrValueAfterLabel(lines, ['保單狀態']);
   out.advanceStatus = ocrValueAfterLabel(lines, ['墊繳狀態']);
   out.insured = ocrValueAfterLabel(lines, ['被保險人']).replace(/\s/g,'');
