@@ -770,7 +770,7 @@ function renderDashboard(){
   el.innerHTML = `
   <div class="detail-wrap">
     <div class="dash-grid" style="margin-bottom:16px;">
-      <div class="stat-card"><div class="stat-num">${policies.length}</div><div class="stat-label">總客戶保單數</div></div>
+      <div class="stat-card" style="cursor:pointer;" onclick="switchTab('customers')"><div class="stat-num">${policies.length}</div><div class="stat-label">總客戶保單數 ›</div></div>
       <div class="stat-card"><div class="stat-num">${pendingTotal}</div><div class="stat-label">近 ${REMIND_WINDOW_DAYS} 天待處理提醒</div></div>
     </div>
     ${reminderGroupHtml('生日提醒', cakeIcon, birthdayList, p=>`生日 ${esc(p.birthday)}・可安排問候或加保建議`, 'birthday')}
