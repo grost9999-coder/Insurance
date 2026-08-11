@@ -296,6 +296,7 @@ const REMIND_WINDOW_DAYS = 30; // days ahead to flag birthdays / health-check / 
 let policies = [];
 let selectedId = null;
 let editing = null;
+let lastOcrRawText = '';
 let activeTab = 'dashboard'; // 'dashboard' | 'customers'
 
 function uid(){ return 'p_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
@@ -305,7 +306,7 @@ function emptyBeneficiary(){ return { id: uid(), name:'', rank:'第一順位(均
 function emptyLog(){ return { id: uid(), date:'', type:'回購', item:'', amount:'', note:'' }; }
 function emptyPolicy(){
   return {
-    id: uid(), insurer:'南山人壽', policyNumber:'', currency:'台幣', effectiveDate:'',
+    id: uid(), insurer:'南山人壽', policyNumber:'', currency:'台幣', coverageUnit:'元', effectiveDate:'',
     status:'有效-持續繳費中', payMethod:'年繳', advanceStatus:'無', insured:'', applicant:'',
     birthday:'', phone:'',
     payChannel:'', bank:'', cardLast4:'', cardExpiry:'', nextDueDate:'', nextDeductDate:'',
@@ -325,6 +326,7 @@ function loadData(){
       policies = JSON.parse(raw);
       policies.forEach(p=>{
         if(!('birthday' in p)) p.birthday='';
+        if(!('coverageUnit' in p)) p.coverageUnit='元';
         if(!('phone' in p)) p.phone='';
         if(!('lastCheckDate' in p)) p.lastCheckDate='';
         if(!('nextCheckDate' in p)) p.nextCheckDate='';
@@ -659,7 +661,7 @@ function renderMain(){
       <div class="section-head">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/></svg>
         <h2 class="serif">險種明細</h2>
-        <span class="subtotal">保費總計 <span class="mono" style="font-weight:700; color:var(--ink);">${fmtMoney(totalPremium(p))}</span></span>
+        <span class="subtotal">幣值單位：${esc(p.coverageUnit)||'元'}・保費總計 <span class="mono" style="font-weight:700; color:var(--ink);">${fmtMoney(totalPremium(p))}</span></span>
       </div>
       <div style="border:1px solid var(--line2); border-radius:8px; overflow:hidden;">
         <table>
@@ -756,6 +758,13 @@ function renderModalBody(){
       </button>
       <input type="file" id="ocr-input" accept="image/*" multiple style="display:none;" onchange="handleOcrFiles(event)" />
     </div>
+    ${lastOcrRawText ? `
+    <div style="margin:-10px 0 16px;">
+      <button type="button" class="link-btn" onclick="const el=document.getElementById('ocr-raw-box'); el.style.display = el.style.display==='none' ? 'block' : 'none';">
+        查看辨識原始文字（除錯用）
+      </button>
+      <pre id="ocr-raw-box" style="display:none; margin-top:6px; max-height:160px; overflow:auto; background:#F6F4EC; border:1px solid var(--line2); border-radius:8px; padding:10px; font-size:11px; white-space:pre-wrap; color:#4A5266;">${esc(lastOcrRawText)}</pre>
+    </div>` : ''}
     <div class="form-grid">
       ${field('保險公司','insurer')}
       ${field('保單號碼','policyNumber')}
@@ -764,6 +773,7 @@ function renderModalBody(){
       ${field('生日','birthday','YYYY/MM/DD 或 MM/DD')}
       ${field('聯絡電話','phone')}
       ${field('保單幣別','currency')}
+      ${field('幣值單位','coverageUnit','例：元')}
       ${field('保單生效日','effectiveDate','YYYY/MM/DD')}
       ${field('保單狀態','status')}
       ${field('主約繳法','payMethod')}
@@ -961,6 +971,7 @@ async function handleOcrFiles(evt){
   overlay.style.display = 'none';
 
   const parsed = parseOcrText(combinedText);
+  lastOcrRawText = combinedText;
   mergeOcrIntoEditing(parsed);
   renderModalBody();
   showError('已將辨識到的欄位帶入下方表單，請仔細核對後再儲存（險種明細等表格類資料辨識率較低，請特別確認）');
@@ -968,7 +979,7 @@ async function handleOcrFiles(evt){
 
 function mergeOcrIntoEditing(parsed){
   if(!editing) return;
-  const scalarKeys = ['policyNumber','currency','status','advanceStatus','insured','applicant','phone',
+  const scalarKeys = ['policyNumber','currency','coverageUnit','status','advanceStatus','insured','applicant','phone',
     'effectiveDate','payMethod','payChannel','bank','cardLast4','cardExpiry','nextDueDate','nextDeductDate'];
   scalarKeys.forEach(k=>{
     if(parsed[k]) editing[k] = parsed[k];
@@ -984,7 +995,30 @@ function mergeOcrIntoEditing(parsed){
 }
 
 function ocrLines(text){
-  return text.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  // Tesseract's Chinese recognition frequently inserts spaces between characters
+  // (e.g. "被 保 險 人"), which breaks straightforward substring label matching.
+  // Strip internal whitespace per line while keeping line breaks intact.
+  return text.split('\n')
+    .map(l=> l.replace(/[ \t\u3000]+/g, '').trim())
+    .filter(l=>l.length>0);
+}
+
+// Every label the parser looks for, used to stop a value from swallowing the next
+// field when OCR merges multiple labels onto one line (e.g. "A058051900保單幣別:台幣").
+const ALL_OCR_LABELS = [
+  '保單號碼','保單幣別','保單生效日','保單狀態','主約繳法','墊繳狀態','被保險人','要保人',
+  '聯絡電話','電話','繳費方式','卡號','信用卡有效期限','有效期限','下期應繳日期','預計扣款日',
+  '幣值單位','姓名','分配方式/比例','分配方式','一次給付','分期給付','給付期間','給付方式',
+  '銀行名稱','分行名稱','帳號','聯絡地址','險種名稱','保額','保障狀態','生效日','停效日','保費','職業等級'
+];
+
+function trimAtNextLabel(str){
+  let cut = str.length;
+  for(const label of ALL_OCR_LABELS){
+    const idx = str.indexOf(label);
+    if(idx > 0 && idx < cut) cut = idx;
+  }
+  return str.slice(0, cut).trim();
 }
 
 function ocrValueAfterLabel(lines, labels){
@@ -993,11 +1027,12 @@ function ocrValueAfterLabel(lines, labels){
       const idx = lines[i].indexOf(label);
       if(idx === -1) continue;
       let rest = lines[i].slice(idx + label.length).replace(/^[:：\s]+/, '').trim();
+      rest = trimAtNextLabel(rest);
       if(rest) return rest;
       // value likely on next non-empty line(s)
       for(let j=i+1; j<Math.min(i+3, lines.length); j++){
         if(lines[j] && !labels.some(l=>lines[j].includes(l))){
-          return lines[j].trim();
+          return trimAtNextLabel(lines[j].trim());
         }
       }
     }
@@ -1010,13 +1045,20 @@ function findFirstDateWestern(str){
   return m ? `${m[1]}/${String(+m[2]).padStart(2,'0')}/${String(+m[3]).padStart(2,'0')}` : '';
 }
 
+function findPolicyNumberFallback(flat){
+  // common insurer policy-number shapes: 1-2 letters followed by 6-10 digits, no label needed
+  const m = flat.match(/\b[A-Z]{1,2}\d{6,10}\b/);
+  return m ? m[0] : '';
+}
+
 function parseOcrText(text){
   const lines = ocrLines(text);
   const flat = lines.join(' ');
   const out = {};
 
-  out.policyNumber = ocrValueAfterLabel(lines, ['保單號碼']).replace(/\s/g,'');
+  out.policyNumber = (ocrValueAfterLabel(lines, ['保單號碼']) || findPolicyNumberFallback(flat)).replace(/\s/g,'');
   out.currency = ocrValueAfterLabel(lines, ['保單幣別']);
+  out.coverageUnit = ocrValueAfterLabel(lines, ['幣值單位']);
   out.status = ocrValueAfterLabel(lines, ['保單狀態']);
   out.advanceStatus = ocrValueAfterLabel(lines, ['墊繳狀態']);
   out.insured = ocrValueAfterLabel(lines, ['被保險人']).replace(/\s/g,'');
@@ -1065,18 +1107,22 @@ function parseOcrText(text){
     if(deductMatch) out.nextDeductDate = findFirstDateWestern(deductMatch[1]);
   }
 
-  // beneficiaries: repeated "姓名" + "分配方式/比例" pairs anywhere in the document
+  // beneficiaries: repeated "姓名" + "分配方式/比例" pairs anywhere in the document.
+  // OCR noise (icons misread as text, stray brackets, the label text itself) is filtered
+  // out by requiring a plausible Chinese-name-like string that isn't one of our own labels.
   {
     const beneficiaries = [];
     for(let i=0;i<lines.length;i++){
       if(/^姓名[:：]?$/.test(lines[i]) || lines[i]==='姓名'){
         let name = '';
         for(let j=i+1;j<Math.min(i+3,lines.length);j++){
-          if(lines[j] && lines[j] !== '姓名'){ name = lines[j]; break; }
+          const candidate = trimAtNextLabel(lines[j]);
+          const looksLikeName = candidate && /[\u4e00-\u9fa5]/.test(candidate) && !ALL_OCR_LABELS.includes(candidate);
+          if(looksLikeName){ name = candidate; break; }
         }
         let rank = '';
         for(let j=i+1;j<Math.min(i+8,lines.length);j++){
-          if(lines[j].includes('順位')){ rank = lines[j]; break; }
+          if(lines[j].includes('順位')){ rank = trimAtNextLabel(lines[j]); break; }
         }
         if(name) beneficiaries.push({ id: uid(), name: name.replace(/[:：]/g,'').trim(), rank: rank || '' });
       }
@@ -1118,6 +1164,7 @@ function parseOcrText(text){
 
   return out;
 }
+
 
 
 loadData();
