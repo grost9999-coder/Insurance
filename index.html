@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>客戶保險資料庫</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="保險資料庫" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#16233A" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2316233A'/%3E%3Cpath d='M50 20 L76 30 V50 C76 66 65 78 50 84 C35 78 24 66 24 50 V30 Z' fill='none' stroke='%23C9A227' stroke-width='4'/%3E%3Cpath d='M39 50 L47 58 L63 40' fill='none' stroke='%23C9A227' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<style>
+  :root{
+    --ink:#16233A; --paper:#F3F1EA; --card:#FBFAF6; --line:#E3DECD; --line2:#EFEBDF;
+    --muted:#8B93A1; --teal:#2F6F62; --teal-dark:#265A50; --gold:#C9A227;
+    --ok-bg:#EAF2EE; --ok-fg:#2F6F62; --bad-bg:#F6E9E3; --bad-fg:#B5502C;
+    --warn-bg:#FCF3DE; --warn-fg:#9A7511;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Noto Sans TC', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .serif{ font-family:'Noto Serif TC', serif; }
+  .mono{ font-family:'JetBrains Mono', ui-monospace, monospace; }
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:#D8D2C2; border-radius:8px; }
+
+  #app{ display:flex; flex-direction:column; height:100vh; }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--line); background:var(--card);
+    padding:14px 18px; flex-shrink:0; gap:10px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .brand-icon{
+    width:36px; height:36px; border-radius:8px; background:var(--ink);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .brand h1{ margin:0; font-size:16px; font-weight:700; line-height:1.2; }
+  .brand p{ margin:2px 0 0; font-size:11px; color:var(--muted); }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; border:none; cursor:pointer;
+    border-radius:8px; padding:9px 14px; font-size:13px; font-weight:500;
+    font-family:inherit; transition:background .15s; white-space:nowrap;
+  }
+  .btn-primary{ background:var(--teal); color:#fff; }
+  .btn-primary:hover{ background:var(--teal-dark); }
+  .btn-dark{ background:var(--ink); color:#fff; }
+  .btn-dark:hover{ background:#1F3050; }
+  .btn-ghost{ background:transparent; color:var(--muted); }
+  .btn-ghost:hover{ background:var(--line2); }
+  .btn-danger{ background:transparent; color:var(--bad-fg); border:1px solid #E3B8A5; }
+  .btn-danger:hover{ background:#FBF0E7; }
+
+  #error-bar{
+    display:none; align-items:center; gap:8px; padding:8px 18px;
+    background:#FBF0E7; color:var(--bad-fg); border-bottom:1px solid #F0D9C8; font-size:13px;
+  }
+
+  #nav-tabs{ display:flex; gap:4px; border-bottom:1px solid var(--line); background:var(--card); padding:0 18px; flex-shrink:0; }
+  .tab-btn{
+    background:none; border:none; cursor:pointer; font-family:inherit; font-size:13px; font-weight:500;
+    padding:10px 4px; color:var(--muted); border-bottom:2px solid transparent; margin-right:18px;
+  }
+  .tab-btn.active{ color:var(--ink); border-bottom-color:var(--teal); }
+  .tab-btn .badge{
+    display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px;
+    border-radius:999px; background:var(--bad-fg); color:#fff; font-size:10px; padding:0 4px; margin-left:5px;
+  }
+
+  .layout{ flex:1; display:flex; overflow:hidden; min-height:0; }
+
+  #sidebar{
+    width:100%; max-width:340px; flex-shrink:0; background:var(--card);
+    border-right:1px solid var(--line); display:flex; flex-direction:column;
+  }
+  .search-wrap{ padding:10px; border-bottom:1px solid var(--line); }
+  .search-box{
+    display:flex; align-items:center; gap:8px; background:#fff;
+    border:1px solid #DDD7C9; border-radius:8px; padding:8px 10px;
+  }
+  .search-box input{
+    border:none; outline:none; background:transparent; font-size:13px; width:100%;
+    font-family:inherit; color:var(--ink);
+  }
+  #list{ flex:1; overflow-y:auto; }
+  .list-item{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; border-bottom:1px solid var(--line2); cursor:pointer;
+    text-align:left; background:none; width:100%; border-left:none; border-right:none; border-top:none;
+    font-family:inherit;
+  }
+  .list-item:hover{ background:#F3F1E8; }
+  .list-item.active{ background:#EEF3F0; }
+  .list-item .name{ font-size:13px; font-weight:500; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:6px; }
+  .list-item .num{ font-size:11px; color:var(--muted); margin-top:2px; }
+  .flag-dot{ width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .empty-list{ display:flex; flex-direction:column; align-items:center; gap:8px; padding:60px 24px; text-align:center; color:var(--muted); }
+
+  #main{ flex:1; overflow-y:auto; padding:20px; }
+  .detail-wrap{ max-width:720px; margin:0 auto; }
+  .placeholder{ display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--muted); text-align:center; }
+
+  .pill{ display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:2px 10px; font-size:11px; font-weight:500; }
+  .pill-ok{ background:var(--ok-bg); color:var(--ok-fg); }
+  .pill-bad{ background:var(--bad-bg); color:var(--bad-fg); }
+  .pill-warn{ background:var(--warn-bg); color:var(--warn-fg); }
+  .dot{ width:6px; height:6px; border-radius:50%; }
+  .dot-ok{ background:var(--ok-fg); }
+  .dot-bad{ background:var(--bad-fg); }
+  .dot-warn{ background:var(--warn-fg); }
+
+  .passbook{ border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--card); }
+  .passbook-head{ display:flex; align-items:center; justify-content:space-between; background:var(--ink); padding:12px 18px; }
+  .passbook-head .insurer{ display:flex; align-items:center; gap:8px; color:#F3F1EA; font-weight:600; font-size:13px; }
+  .passbook-head .gold-dot{ width:8px; height:8px; border-radius:50%; background:var(--gold); }
+  .passbook-head .cur{ color:var(--gold); font-size:12px; }
+  .passbook-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px 24px; padding:18px; }
+  .field-label{ font-size:11px; color:var(--muted); margin-bottom:3px; }
+  .field-value{ font-size:14px; font-weight:500; }
+  .field-value.big{ font-size:16px; font-weight:700; }
+
+  .section-card{ border:1px solid var(--line); border-radius:14px; background:#fff; padding:18px; margin-top:16px; }
+  .section-head{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .section-head h2{ margin:0; font-size:14px; font-weight:700; color:var(--ink); flex:1; }
+  .section-head .subtotal{ font-size:12px; color:var(--muted); }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  thead th{ text-align:left; font-size:11px; color:var(--muted); font-weight:500; padding:8px 10px; background:#F6F4EC; }
+  tbody td{ padding:8px 10px; border-top:1px solid var(--line2); }
+  .ta-right{ text-align:right; }
+
+  .beneficiary-row{ display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-top:1px solid var(--line2); font-size:13px; }
+  .beneficiary-row:first-child{ border-top:none; }
+  .beneficiary-row .rank{ font-size:11px; color:var(--muted); }
+
+  .actions-row{ display:flex; justify-content:flex-end; gap:8px; margin-top:16px; padding-bottom:24px; }
+
+  .reminder-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-top:1px solid var(--line2); }
+  .reminder-row:first-child{ border-top:none; }
+  .reminder-row:hover{ cursor:pointer; }
+  .reminder-name{ font-size:13px; font-weight:600; }
+  .reminder-sub{ font-size:11px; color:var(--muted); margin-top:1px; }
+
+  .dash-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:600px){ .dash-grid{ grid-template-columns:1fr; } }
+  .stat-card{ border:1px solid var(--line); border-radius:12px; background:#fff; padding:14px 16px; }
+  .stat-num{ font-size:24px; font-weight:700; font-family:'Noto Serif TC',serif; color:var(--ink); }
+  .stat-label{ font-size:11px; color:var(--muted); margin-top:2px; }
+
+  #modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.4);
+    align-items:center; justify-content:center; padding:16px; z-index:50;
+  }
+  #modal{
+    width:100%; max-width:640px; max-height:90vh; background:var(--card);
+    border-radius:14px; display:flex; flex-direction:column; overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);
+  }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .modal-head h3{ margin:0; font-size:15px; font-weight:700; }
+  .modal-body{ flex:1; overflow-y:auto; padding:16px 18px; }
+  .modal-foot{ display:flex; justify-content:flex-end; gap:8px; padding:14px 18px; border-top:1px solid var(--line); }
+
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .form-group{ display:flex; flex-direction:column; gap:4px; }
+  .form-group label{ font-size:11px; color:var(--muted); font-weight:500; }
+  .form-group input, .form-group textarea{
+    border:1px solid #DDD7C9; border-radius:6px; padding:8px 10px; font-size:13px;
+    font-family:inherit; background:#FBFAF6; outline:none; color:var(--ink);
+  }
+  .form-group input:focus, .form-group textarea:focus{ border-color:var(--teal); box-shadow:0 0 0 3px rgba(47,111,98,.12); }
+  .subblock{ margin-top:18px; padding-top:14px; border-top:1px solid var(--line2); }
+  .subblock-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .subblock-head p{ margin:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); }
+  .link-btn{ background:none; border:none; cursor:pointer; color:var(--teal); font-size:12px; font-weight:500; font-family:inherit; display:flex; align-items:center; gap:4px; }
+  .link-btn:hover{ text-decoration:underline; }
+  .dyn-row{ display:grid; grid-template-columns:repeat(12,1fr); gap:6px; align-items:center; border:1px solid var(--line2); background:#fff; border-radius:8px; padding:8px; margin-bottom:6px; }
+  .dyn-row input{ border:1px solid #DDD7C9; border-radius:6px; padding:7px 8px; font-size:12px; font-family:inherit; background:#FBFAF6; outline:none; }
+  .dyn-row input:focus{ border-color:var(--teal); }
+  .col-3{ grid-column:span 3; } .col-2{ grid-column:span 2; } .col-5{ grid-column:span 5; } .col-6{ grid-column:span 6; } .col-1{ grid-column:span 1; } .col-4{ grid-column:span 4; }
+  .row-del{ display:flex; justify-content:center; background:none; border:none; cursor:pointer; color:var(--bad-fg); }
+
+  svg{ display:block; }
+
+  @media (max-width:760px){
+    .layout{ position:relative; }
+    #sidebar{ position:absolute; inset:0; max-width:none; z-index:5; transition:transform .2s ease; }
+    #sidebar.hide{ transform:translateX(-100%); }
+    #main{ padding:14px; }
+    .passbook-grid{ grid-template-columns:1fr 1fr; gap:12px 16px; padding:14px; }
+    .form-grid{ grid-template-columns:1fr; }
+    #back-btn{ display:inline-flex; }
+    .brand p{ display:none; }
+  }
+  #back-btn{ display:none; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="brand">
+      <button id="back-btn" class="btn btn-ghost" style="padding:6px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16233A" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="brand-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <div>
+        <h1 class="serif">客戶保險資料庫</h1>
+        <p>保單管理・提醒追蹤・回購紀錄</p>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span id="saving-indicator" style="display:none; font-size:11px; color:var(--muted);">儲存中…</span>
+      <button class="btn btn-ghost" style="border:1px solid var(--line);" onclick="document.getElementById('ocr-input').click()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16233A" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        拍照／上傳辨識
+      </button>
+      <input type="file" id="ocr-input" accept="image/*" capture="environment" multiple style="display:none;" onchange="handleOcrFiles(event)" />
+      <button class="btn btn-primary" onclick="openNewPolicy()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        新增保單
+      </button>
+    </div>
+  </header>
+
+  <div id="error-bar">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B5502C" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    <span id="error-text"></span>
+  </div>
+
+  <nav id="nav-tabs">
+    <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">總覽提醒</button>
+    <button class="tab-btn" id="tab-customers" onclick="switchTab('customers')">客戶保單</button>
+  </nav>
+
+  <div class="layout">
+    <aside id="sidebar">
+      <div class="search-wrap">
+        <div class="search-box">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B93A1" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="search-input" placeholder="搜尋保單號碼／姓名" oninput="renderList()" />
+        </div>
+      </div>
+      <div id="list"></div>
+    </aside>
+
+    <main id="main">
+      <div id="main-content"></div>
+    </main>
+  </div>
+</div>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <div class="modal-head">
+      <h3 id="modal-title" class="serif">新增保單</h3>
+      <button class="btn btn-ghost" style="padding:6px;" onclick="closeModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B93A1" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="commitEdit()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+        儲存
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="ocr-overlay" style="display:none; position:fixed; inset:0; background:rgba(22,35,58,.55); align-items:center; justify-content:center; z-index:60;">
+  <div style="background:#FBFAF6; border-radius:14px; padding:28px 32px; width:280px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.3);">
+    <div style="width:34px; height:34px; margin:0 auto 14px; border:3px solid #E3DECD; border-top-color:#2F6F62; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+    <p id="ocr-status" class="serif" style="margin:0 0 4px; font-size:14px; color:#16233A;">辨識中…</p>
+    <p id="ocr-substatus" style="margin:0; font-size:11px; color:#8B93A1;">請稍候</p>
+  </div>
+</div>
+<style>@keyframes spin{ to{ transform:rotate(360deg); } }</style>
+
+<script>
+const STORAGE_KEY = 'insurance_policies_v2';
+const REMIND_WINDOW_DAYS = 30; // days ahead to flag birthdays / health-check / renewal
+
+let policies = [];
+let selectedId = null;
+let editing = null;
+let activeTab = 'dashboard'; // 'dashboard' | 'customers'
+
+function uid(){ return 'p_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+function emptyCoverage(){ return { id: uid(), name:'', amount:'', status:'有效', effectiveDate:'', premium:'' }; }
+function emptyBeneficiary(){ return { id: uid(), name:'', rank:'第一順位(均分)' }; }
+function emptyLog(){ return { id: uid(), date:'', type:'回購', item:'', amount:'', note:'' }; }
+function emptyPolicy(){
+  return {
+    id: uid(), insurer:'南山人壽', policyNumber:'', currency:'台幣', effectiveDate:'',
+    status:'有效-持續繳費中', payMethod:'年繳', advanceStatus:'無', insured:'', applicant:'',
+    birthday:'', phone:'',
+    payChannel:'', bank:'', cardLast4:'', cardExpiry:'', nextDueDate:'', nextDeductDate:'',
+    lastCheckDate:'', nextCheckDate:'', checkNotes:'',
+    coverages:[emptyCoverage()], beneficiaries:[emptyBeneficiary()], logs:[], notes:''
+  };
+}
+
+function seedPolicies(){
+  return [{
+    id: uid(), insurer:'南山人壽', policyNumber:'A037030661', currency:'台幣',
+    effectiveDate:'2023/12/05', status:'有效-持續繳費中', payMethod:'年繳', advanceStatus:'無',
+    insured:'黃鈺喬', applicant:'黃瀚本', birthday:'', phone:'',
+    payChannel:'聯名卡-玉山銀行', bank:'玉山銀行', cardLast4:'53', cardExpiry:'12/26',
+    nextDueDate:'2026/12/05', nextDeductDate:'2026/12/07',
+    lastCheckDate:'', nextCheckDate:'', checkNotes:'',
+    coverages:[
+      { id: uid(), name:'南山人壽全心溢靠2醫療保險 (20HPCHI2)', amount:'1單位', status:'有效', effectiveDate:'2023/12/05', premium:'15709' },
+      { id: uid(), name:'南山人壽實踐幸福住院醫療健康保險附約-B型 (1HSB)', amount:'1份', status:'有效', effectiveDate:'2023/12/05', premium:'3271' },
+      { id: uid(), name:'南山人壽意外骨折暨傷害醫療保險附約 (BBMR)', amount:'1份', status:'有效', effectiveDate:'2023/12/05', premium:'1450' },
+      { id: uid(), name:'南山人壽意外傷害醫療日額給付附加條款 (DHI)', amount:'2,000', status:'有效', effectiveDate:'2023/12/05', premium:'1080' },
+      { id: uid(), name:'南山人壽陪童長大意外傷害保險附約-3型 (KPAR3)', amount:'615,000', status:'有效', effectiveDate:'2023/12/05', premium:'609' },
+    ],
+    beneficiaries:[
+      { id: uid(), name:'黃瀚本', rank:'第一順位(均分)' },
+      { id: uid(), name:'江佩芳', rank:'第二順位(均分)' },
+      { id: uid(), name:'法定繼承人', rank:'第三順位(均分)' },
+    ],
+    logs:[], notes:''
+  }];
+}
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      policies = JSON.parse(raw);
+      policies.forEach(p=>{
+        if(!('birthday' in p)) p.birthday='';
+        if(!('phone' in p)) p.phone='';
+        if(!('lastCheckDate' in p)) p.lastCheckDate='';
+        if(!('nextCheckDate' in p)) p.nextCheckDate='';
+        if(!('checkNotes' in p)) p.checkNotes='';
+        if(!('logs' in p)) p.logs=[];
+      });
+      if(policies.length) selectedId = policies[0].id;
+    } else {
+      policies = seedPolicies();
+      selectedId = policies[0].id;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(policies));
+    }
+  }catch(e){ /* ignore */ }
+}
+
+function saveData(){
+  const ind = document.getElementById('saving-indicator');
+  ind.style.display = 'inline';
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(policies));
+    hideError();
+  }catch(e){
+    showError('儲存失敗，裝置儲存空間可能不足');
+  }
+  setTimeout(()=>{ ind.style.display='none'; }, 300);
+}
+
+function showError(msg){
+  document.getElementById('error-text').textContent = msg;
+  document.getElementById('error-bar').style.display = 'flex';
+}
+function hideError(){
+  document.getElementById('error-bar').style.display = 'none';
+}
+
+function fmtMoney(n){
+  const num = parseFloat(String(n).replace(/,/g,'')) || 0;
+  return new Intl.NumberFormat('zh-TW').format(Math.round(num));
+}
+function totalPremium(p){
+  return (p.coverages||[]).reduce((s,c)=> s + (parseFloat(String(c.premium).replace(/,/g,''))||0), 0);
+}
+function esc(s){
+  return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function statusPill(status){
+  const ok = (status||'').includes('有效');
+  return `<span class="pill ${ok?'pill-ok':'pill-bad'}"><span class="dot ${ok?'dot-ok':'dot-bad'}"></span>${esc(status||'未設定')}</span>`;
+}
+
+/* ---- date helpers for reminders ---- */
+function parseDateFlexible(str){
+  // accepts YYYY/MM/DD, YYYY-MM-DD, MM/DD, MM-DD
+  if(!str) return null;
+  const s = str.trim();
+  let m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if(m) return { y:+m[1], mo:+m[2], d:+m[3], hasYear:true };
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+  if(m) return { y:null, mo:+m[1], d:+m[2], hasYear:false };
+  return null;
+}
+function daysUntilNextOccurrence(dateObj){
+  if(!dateObj) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  let year = today.getFullYear();
+  let candidate = new Date(year, dateObj.mo-1, dateObj.d);
+  candidate.setHours(0,0,0,0);
+  if(candidate < today) candidate = new Date(year+1, dateObj.mo-1, dateObj.d);
+  const diff = Math.round((candidate - today) / 86400000);
+  return diff;
+}
+function daysUntilFixedDate(dateObj){
+  if(!dateObj || !dateObj.hasYear) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(dateObj.y, dateObj.mo-1, dateObj.d);
+  target.setHours(0,0,0,0);
+  return Math.round((target - today) / 86400000);
+}
+
+function getReminders(){
+  const birthdayList = [];
+  const checkList = [];
+  const renewalList = [];
+  policies.forEach(p=>{
+    const bd = parseDateFlexible(p.birthday);
+    if(bd){
+      const days = daysUntilNextOccurrence(bd);
+      if(days !== null && days <= REMIND_WINDOW_DAYS){
+        birthdayList.push({ p, days });
+      }
+    }
+    const nc = parseDateFlexible(p.nextCheckDate);
+    if(nc){
+      const days = daysUntilFixedDate(nc);
+      if(days !== null && days <= REMIND_WINDOW_DAYS){
+        checkList.push({ p, days });
+      }
+    }
+    const nd = parseDateFlexible(p.nextDueDate);
+    if(nd){
+      const days = daysUntilFixedDate(nd);
+      if(days !== null && days <= REMIND_WINDOW_DAYS){
+        renewalList.push({ p, days });
+      }
+    }
+  });
+  birthdayList.sort((a,b)=>a.days-b.days);
+  checkList.sort((a,b)=>a.days-b.days);
+  renewalList.sort((a,b)=>a.days-b.days);
+  return { birthdayList, checkList, renewalList };
+}
+
+function daysLabel(days){
+  if(days < 0) return `已過期 ${Math.abs(days)} 天`;
+  if(days === 0) return '就是今天';
+  return `${days} 天後`;
+}
+
+/* ---------- tabs ---------- */
+function switchTab(tab){
+  activeTab = tab;
+  document.getElementById('tab-dashboard').classList.toggle('active', tab==='dashboard');
+  document.getElementById('tab-customers').classList.toggle('active', tab==='customers');
+  document.getElementById('sidebar').style.display = tab==='customers' ? 'flex' : 'none';
+  if(window.innerWidth <= 760 && tab==='customers'){
+    document.getElementById('sidebar').classList.remove('hide');
+  }
+  renderMain();
+}
+
+/* ---------- list / sidebar ---------- */
+function renderList(){
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  const listEl = document.getElementById('list');
+  const { birthdayList, checkList, renewalList } = getReminders();
+  const flagIds = new Set([...birthdayList, ...checkList, ...renewalList].map(x=>x.p.id));
+
+  const filtered = policies.filter(p=>{
+    if(!q) return true;
+    return [p.policyNumber,p.insured,p.applicant,p.insurer].some(v=> (v||'').toLowerCase().includes(q));
+  });
+
+  if(filtered.length === 0){
+    listEl.innerHTML = `<div class="empty-list">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#D8D2C2" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <p style="margin:0; font-size:13px;">${policies.length===0 ? '尚無保單資料' : '找不到符合的保單'}</p>
+      ${policies.length===0 ? '<p style="margin:0; font-size:12px;">點選「新增保單」開始建立</p>' : ''}
+    </div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(p=>`
+    <button class="list-item ${p.id===selectedId?'active':''}" onclick="selectPolicy('${p.id}')">
+      <div style="min-width:0;">
+        <div class="name">${flagIds.has(p.id) ? '<span class="flag-dot" style="background:var(--warn-fg);"></span>' : ''}${esc(p.insured || '未命名被保險人')}</div>
+        <div class="num mono">${esc(p.policyNumber || '—')}</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C1B2" stroke-width="2" style="flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+  `).join('');
+}
+
+function selectPolicy(id){
+  selectedId = id;
+  activeTab = 'customers';
+  document.getElementById('tab-dashboard').classList.remove('active');
+  document.getElementById('tab-customers').classList.add('active');
+  document.getElementById('sidebar').style.display = 'flex';
+  renderList();
+  renderMain();
+  if(window.innerWidth <= 760){
+    document.getElementById('sidebar').classList.add('hide');
+  }
+}
+
+document.getElementById('back-btn').addEventListener('click', ()=>{
+  document.getElementById('sidebar').classList.remove('hide');
+});
+
+/* ---------- dashboard ---------- */
+function lineShareUrl(text){
+  return 'https://line.me/R/share?text=' + encodeURIComponent(text);
+}
+function openLineShare(evt, text){
+  evt.stopPropagation();
+  window.open(lineShareUrl(text), '_blank');
+}
+function reminderMessage(kind, p){
+  if(kind==='birthday') return `${p.insured} 您好，喬鈺提醒您生日快樂！祝您身體健康，若有保障需求歡迎隨時找我聊聊 🎂`;
+  if(kind==='check') return `${p.insured} 您好，您的保單（${p.policyNumber}）建議安排一次保單健檢，確認保障是否還符合現在的需求，方便的話約個時間聊聊嗎？`;
+  if(kind==='renew') return `${p.insured} 您好，提醒您保單（${p.policyNumber}）下期應繳日為 ${p.nextDueDate}，預計扣款日 ${p.nextDeductDate}，請留意帳戶餘額，謝謝！`;
+  return '';
+}
+function reminderGroupHtml(title, iconSvg, items, sublineFn, kind){
+  if(items.length===0){
+    return `<div class="section-card">
+      <div class="section-head">${iconSvg}<h2 class="serif">${title}</h2></div>
+      <p style="color:var(--muted); font-size:13px; margin:0;">近 ${REMIND_WINDOW_DAYS} 天內無提醒事項</p>
+    </div>`;
+  }
+  const rows = items.map(({p,days})=>{
+    const overdue = days < 0;
+    const msg = reminderMessage(kind, p).replace(/'/g, "\\'");
+    return `<div class="reminder-row" onclick="selectPolicy('${p.id}')">
+      <div>
+        <div class="reminder-name">${esc(p.insured)||'—'}</div>
+        <div class="reminder-sub">${sublineFn(p)}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="pill ${overdue?'pill-bad':'pill-warn'}"><span class="dot ${overdue?'dot-bad':'dot-warn'}"></span>${daysLabel(days)}</span>
+        <button class="btn btn-ghost" style="padding:6px 8px; font-size:11px;" onclick="openLineShare(event, '${msg}')" title="用 LINE 傳送提醒">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="section-card">
+    <div class="section-head">${iconSvg}<h2 class="serif">${title}</h2><span class="subtotal">${items.length} 位</span></div>
+    ${rows}
+  </div>`;
+}
+
+function renderDashboard(){
+  const el = document.getElementById('main-content');
+  const { birthdayList, checkList, renewalList } = getReminders();
+
+  const cakeIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M4 21v-6a4 4 0 014-4h8a4 4 0 014 4v6"/><path d="M2 21h20M12 3v4M8 7c0-1 1-2 1-3s-1-2-1-2M16 7c0-1 1-2 1-3s-1-2-1-2"/></svg>`;
+  const checkIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`;
+  const renewIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`;
+
+  el.innerHTML = `
+  <div class="detail-wrap">
+    <div class="dash-grid" style="margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-num">${policies.length}</div><div class="stat-label">總客戶保單數</div></div>
+      <div class="stat-card"><div class="stat-num">${birthdayList.length + checkList.length + renewalList.length}</div><div class="stat-label">近 ${REMIND_WINDOW_DAYS} 天待處理提醒</div></div>
+    </div>
+    ${reminderGroupHtml('生日提醒', cakeIcon, birthdayList, p=>`生日 ${esc(p.birthday)}・可安排問候或加保建議`, 'birthday')}
+    ${reminderGroupHtml('保單健檢提醒', checkIcon, checkList, p=>`預計健檢日 ${esc(p.nextCheckDate)}`, 'check')}
+    ${reminderGroupHtml('繳費／續約提醒', renewIcon, renewalList, p=>`下期應繳日 ${esc(p.nextDueDate)}`, 'renew')}
+  </div>`;
+}
+
+/* ---------- customer detail ---------- */
+function renderMain(){
+  if(activeTab === 'dashboard'){
+    renderDashboard();
+    return;
+  }
+  const el = document.getElementById('main-content');
+  const p = policies.find(x=>x.id===selectedId);
+  if(!p){
+    el.innerHTML = `<div class="placeholder">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#D8D2C2" stroke-width="1.5" style="margin-bottom:10px;"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/></svg>
+      <p class="serif" style="font-size:15px; color:var(--ink); margin:0 0 4px;">選擇左側保單以檢視詳情</p>
+      <p style="margin:0; font-size:13px;">或新增第一筆客戶保單資料</p>
+    </div>`;
+    return;
+  }
+
+  const coverageRows = (p.coverages||[]).map(c=>`
+    <tr>
+      <td>${esc(c.name)||'—'}</td>
+      <td>${esc(c.amount)||'—'}</td>
+      <td>${statusPill(c.status)}</td>
+      <td>${esc(c.effectiveDate)||'—'}</td>
+      <td class="mono ta-right">${c.premium ? fmtMoney(c.premium) : '—'}</td>
+    </tr>`).join('');
+
+  const beneficiaryRows = (p.beneficiaries||[]).map(b=>`
+    <div class="beneficiary-row">
+      <span style="font-weight:500;">${esc(b.name)||'—'}</span>
+      <span class="rank">${esc(b.rank)}</span>
+    </div>`).join('');
+
+  const logsSorted = [...(p.logs||[])].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  const logRows = logsSorted.map(l=>`
+    <tr>
+      <td>${esc(l.date)||'—'}</td>
+      <td>${esc(l.type)||'—'}</td>
+      <td>${esc(l.item)||'—'}</td>
+      <td class="mono ta-right">${l.amount ? fmtMoney(l.amount) : '—'}</td>
+      <td>${esc(l.note)||''}</td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+  <div class="detail-wrap">
+    <div class="passbook">
+      <div class="passbook-head">
+        <div class="insurer"><span class="gold-dot"></span>${esc(p.insurer)}</div>
+        <div class="cur mono">${esc(p.currency)}</div>
+      </div>
+      <div class="passbook-grid">
+        <div><div class="field-label">保單號碼</div><div class="field-value big mono">${esc(p.policyNumber)}</div></div>
+        <div><div class="field-label">保單狀態</div><div style="margin-top:2px;">${statusPill(p.status)}</div></div>
+        <div><div class="field-label">被保險人</div><div class="field-value">${esc(p.insured)||'—'}</div></div>
+        <div><div class="field-label">要保人</div><div class="field-value">${esc(p.applicant)||'—'}</div></div>
+        <div><div class="field-label">生日</div><div class="field-value" style="font-weight:400;">${esc(p.birthday)||'—'}</div></div>
+        <div><div class="field-label">聯絡電話</div><div class="field-value" style="font-weight:400;">${esc(p.phone)||'—'}</div></div>
+        <div><div class="field-label">保單生效日</div><div class="field-value" style="font-weight:400;">${esc(p.effectiveDate)||'—'}</div></div>
+        <div><div class="field-label">主約繳法／墊繳狀態</div><div class="field-value" style="font-weight:400;">${esc(p.payMethod)} ／ ${esc(p.advanceStatus)}</div></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+        <h2 class="serif">繳費方式</h2>
+      </div>
+      <div class="passbook-grid" style="padding:0; grid-template-columns:repeat(2,1fr);">
+        <div><div class="field-label">繳費管道</div><div class="field-value" style="font-weight:400;">${esc(p.payChannel)||'—'}</div></div>
+        <div><div class="field-label">銀行</div><div class="field-value" style="font-weight:400;">${esc(p.bank)||'—'}</div></div>
+        <div><div class="field-label">卡號末四碼</div><div class="field-value mono" style="font-weight:400;">${p.cardLast4 ? '****'+esc(p.cardLast4) : '—'}</div></div>
+        <div><div class="field-label">有效期限</div><div class="field-value mono" style="font-weight:400;">${esc(p.cardExpiry)||'—'}</div></div>
+        <div><div class="field-label">下期應繳日期</div><div class="field-value" style="font-weight:400;">${esc(p.nextDueDate)||'—'}</div></div>
+        <div><div class="field-label">預計扣款日</div><div class="field-value" style="font-weight:400;">${esc(p.nextDeductDate)||'—'}</div></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <h2 class="serif">保單健檢</h2>
+      </div>
+      <div class="passbook-grid" style="padding:0; grid-template-columns:repeat(2,1fr);">
+        <div><div class="field-label">上次健檢日</div><div class="field-value" style="font-weight:400;">${esc(p.lastCheckDate)||'—'}</div></div>
+        <div><div class="field-label">下次健檢日</div><div class="field-value" style="font-weight:400;">${esc(p.nextCheckDate)||'—'}</div></div>
+      </div>
+      ${p.checkNotes ? `<p style="white-space:pre-wrap; font-size:13px; color:#4A5266; margin:10px 0 0;">${esc(p.checkNotes)}</p>` : ''}
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/></svg>
+        <h2 class="serif">險種明細</h2>
+        <span class="subtotal">保費總計 <span class="mono" style="font-weight:700; color:var(--ink);">${fmtMoney(totalPremium(p))}</span></span>
+      </div>
+      <div style="border:1px solid var(--line2); border-radius:8px; overflow:hidden;">
+        <table>
+          <thead><tr><th>險種名稱</th><th>保額</th><th>狀態</th><th>生效日</th><th class="ta-right">保費</th></tr></thead>
+          <tbody>${coverageRows || '<tr><td colspan="5" style="color:var(--muted); text-align:center; padding:16px;">尚無險種資料</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <h2 class="serif">身故受益人</h2>
+      </div>
+      ${beneficiaryRows || '<p style="color:var(--muted); font-size:13px; margin:0;">尚無受益人資料</p>'}
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>
+        <h2 class="serif">服務／回購紀錄</h2>
+      </div>
+      <div style="border:1px solid var(--line2); border-radius:8px; overflow:hidden;">
+        <table>
+          <thead><tr><th>日期</th><th>類型</th><th>項目</th><th class="ta-right">金額</th><th>備註</th></tr></thead>
+          <tbody>${logRows || '<tr><td colspan="5" style="color:var(--muted); text-align:center; padding:16px;">尚無紀錄</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+
+    ${p.notes ? `<div class="section-card"><h2 class="serif" style="font-size:14px; margin:0 0 8px;">備註</h2><p style="white-space:pre-wrap; font-size:13px; color:#4A5266; margin:0;">${esc(p.notes)}</p></div>` : ''}
+
+    <div class="actions-row">
+      <button class="btn btn-ghost" onclick="openLineShare(event, '${(reminderMessage('renew', p)||'').replace(/'/g,"\\'")}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        用 LINE 聯絡客戶
+      </button>
+      <button class="btn btn-danger" onclick="deletePolicy('${p.id}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>
+        刪除
+      </button>
+      <button class="btn btn-dark" onclick="openEditPolicy('${p.id}')">編輯保單</button>
+    </div>
+  </div>`;
+}
+
+function deletePolicy(id){
+  if(!confirm('確定要刪除這筆保單資料嗎？此動作無法復原。')) return;
+  policies = policies.filter(p=>p.id!==id);
+  if(selectedId===id) selectedId = policies[0]?.id || null;
+  saveData();
+  renderList();
+  renderMain();
+}
+
+/* ---------- Modal / editing ---------- */
+
+function openNewPolicy(){
+  editing = emptyPolicy();
+  document.getElementById('modal-title').textContent = '新增保單';
+  renderModalBody();
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+function openEditPolicy(id){
+  const p = policies.find(x=>x.id===id);
+  editing = JSON.parse(JSON.stringify(p));
+  document.getElementById('modal-title').textContent = '編輯保單';
+  renderModalBody();
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+function closeModal(){
+  editing = null;
+  document.getElementById('modal-overlay').style.display = 'none';
+}
+
+function field(label, key, placeholder){
+  const val = esc(editing[key] ?? '');
+  return `<div class="form-group"><label>${label}</label><input data-key="${key}" placeholder="${placeholder||''}" value="${val}" oninput="editing['${key}']=this.value" /></div>`;
+}
+
+function renderModalBody(){
+  const body = document.getElementById('modal-body');
+  body.innerHTML = `
+    <div class="form-grid">
+      ${field('保險公司','insurer')}
+      ${field('保單號碼','policyNumber')}
+      ${field('被保險人','insured')}
+      ${field('要保人','applicant')}
+      ${field('生日','birthday','YYYY/MM/DD 或 MM/DD')}
+      ${field('聯絡電話','phone')}
+      ${field('保單幣別','currency')}
+      ${field('保單生效日','effectiveDate','YYYY/MM/DD')}
+      ${field('保單狀態','status')}
+      ${field('主約繳法','payMethod')}
+      ${field('墊繳狀態','advanceStatus')}
+    </div>
+
+    <div class="subblock">
+      <div class="subblock-head"><p>繳費方式</p></div>
+      <div class="form-grid">
+        ${field('繳費管道','payChannel','例：聯名卡-玉山銀行')}
+        ${field('銀行','bank')}
+        ${field('卡號末四碼','cardLast4')}
+        ${field('有效期限 (月/年)','cardExpiry','12/26')}
+        ${field('下期應繳日期','nextDueDate','YYYY/MM/DD')}
+        ${field('預計扣款日','nextDeductDate','YYYY/MM/DD')}
+      </div>
+    </div>
+
+    <div class="subblock">
+      <div class="subblock-head"><p>保單健檢</p></div>
+      <div class="form-grid">
+        ${field('上次健檢日','lastCheckDate','YYYY/MM/DD')}
+        ${field('下次健檢日','nextCheckDate','YYYY/MM/DD')}
+      </div>
+      <div class="form-group" style="margin-top:10px;">
+        <label>健檢備註／建議加保方向</label>
+        <textarea style="min-height:56px;" oninput="editing.checkNotes=this.value">${esc(editing.checkNotes||'')}</textarea>
+      </div>
+    </div>
+
+    <div class="subblock">
+      <div class="subblock-head">
+        <p>險種明細</p>
+        <button class="link-btn" onclick="addCoverage()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          新增險種
+        </button>
+      </div>
+      <div id="coverage-list"></div>
+    </div>
+
+    <div class="subblock">
+      <div class="subblock-head">
+        <p>身故受益人</p>
+        <button class="link-btn" onclick="addBeneficiary()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          新增受益人
+        </button>
+      </div>
+      <div id="beneficiary-list"></div>
+    </div>
+
+    <div class="subblock">
+      <div class="subblock-head">
+        <p>服務／回購紀錄</p>
+        <button class="link-btn" onclick="addLog()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          新增紀錄
+        </button>
+      </div>
+      <div id="log-list"></div>
+    </div>
+
+    <div class="subblock">
+      <div class="form-group">
+        <label>備註</label>
+        <textarea style="min-height:70px;" oninput="editing.notes=this.value">${esc(editing.notes||'')}</textarea>
+      </div>
+    </div>
+  `;
+  renderCoverageList();
+  renderBeneficiaryList();
+  renderLogList();
+}
+
+function renderCoverageList(){
+  const el = document.getElementById('coverage-list');
+  el.innerHTML = editing.coverages.map((c,idx)=>`
+    <div class="dyn-row">
+      <input class="col-3" placeholder="險種名稱" value="${esc(c.name)}" oninput="editing.coverages[${idx}].name=this.value" />
+      <input class="col-2" placeholder="保額" value="${esc(c.amount)}" oninput="editing.coverages[${idx}].amount=this.value" />
+      <input class="col-2" placeholder="狀態" value="${esc(c.status)}" oninput="editing.coverages[${idx}].status=this.value" />
+      <input class="col-2" placeholder="生效日" value="${esc(c.effectiveDate)}" oninput="editing.coverages[${idx}].effectiveDate=this.value" />
+      <input class="col-2" placeholder="保費" value="${esc(c.premium)}" oninput="editing.coverages[${idx}].premium=this.value" />
+      <button class="row-del col-1" onclick="removeCoverage(${idx})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>
+      </button>
+    </div>`).join('');
+}
+function renderBeneficiaryList(){
+  const el = document.getElementById('beneficiary-list');
+  el.innerHTML = editing.beneficiaries.map((b,idx)=>`
+    <div class="dyn-row">
+      <input class="col-6" placeholder="姓名" value="${esc(b.name)}" oninput="editing.beneficiaries[${idx}].name=this.value" />
+      <input class="col-5" placeholder="分配方式/比例" value="${esc(b.rank)}" oninput="editing.beneficiaries[${idx}].rank=this.value" />
+      <button class="row-del col-1" onclick="removeBeneficiary(${idx})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>
+      </button>
+    </div>`).join('');
+}
+function renderLogList(){
+  const el = document.getElementById('log-list');
+  el.innerHTML = editing.logs.map((l,idx)=>`
+    <div class="dyn-row">
+      <input class="col-2" placeholder="日期" value="${esc(l.date)}" oninput="editing.logs[${idx}].date=this.value" />
+      <input class="col-2" placeholder="類型" value="${esc(l.type)}" oninput="editing.logs[${idx}].type=this.value" />
+      <input class="col-3" placeholder="項目" value="${esc(l.item)}" oninput="editing.logs[${idx}].item=this.value" />
+      <input class="col-2" placeholder="金額" value="${esc(l.amount)}" oninput="editing.logs[${idx}].amount=this.value" />
+      <input class="col-2" placeholder="備註" value="${esc(l.note)}" oninput="editing.logs[${idx}].note=this.value" />
+      <button class="row-del col-1" onclick="removeLog(${idx})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+function addCoverage(){ editing.coverages.push(emptyCoverage()); renderCoverageList(); }
+function removeCoverage(idx){ editing.coverages.splice(idx,1); renderCoverageList(); }
+function addBeneficiary(){ editing.beneficiaries.push(emptyBeneficiary()); renderBeneficiaryList(); }
+function removeBeneficiary(idx){ editing.beneficiaries.splice(idx,1); renderBeneficiaryList(); }
+function addLog(){ editing.logs.push(emptyLog()); renderLogList(); }
+function removeLog(idx){ editing.logs.splice(idx,1); renderLogList(); }
+
+function commitEdit(){
+  if(!editing.policyNumber || !editing.policyNumber.trim()){
+    showError('請輸入保單號碼');
+    return;
+  }
+  const exists = policies.some(p=>p.id===editing.id);
+  if(exists){
+    policies = policies.map(p=> p.id===editing.id ? editing : p);
+  }else{
+    policies = [editing, ...policies];
+  }
+  selectedId = editing.id;
+  saveData();
+  closeModal();
+  activeTab = 'customers';
+  document.getElementById('tab-dashboard').classList.remove('active');
+  document.getElementById('tab-customers').classList.add('active');
+  document.getElementById('sidebar').style.display = 'flex';
+  renderList();
+  renderMain();
+}
+
+/* ---------- OCR: photo/upload recognition ---------- */
+async function handleOcrFiles(evt){
+  const files = Array.from(evt.target.files || []);
+  evt.target.value = ''; // allow re-selecting the same file later
+  if(files.length === 0) return;
+
+  const overlay = document.getElementById('ocr-overlay');
+  const statusEl = document.getElementById('ocr-status');
+  const subEl = document.getElementById('ocr-substatus');
+  overlay.style.display = 'flex';
+
+  let combinedText = '';
+  try{
+    for(let i=0; i<files.length; i++){
+      statusEl.textContent = `辨識中 (${i+1}/${files.length})`;
+      subEl.textContent = '正在讀取圖片文字…';
+      const { data } = await Tesseract.recognize(files[i], 'chi_tra+eng', {
+        logger: m=>{
+          if(m.status === 'recognizing text' && m.progress != null){
+            subEl.textContent = `分析中 ${Math.round(m.progress*100)}%`;
+          }
+        }
+      });
+      combinedText += '\n' + (data.text || '');
+    }
+  }catch(e){
+    overlay.style.display = 'none';
+    showError('圖片辨識失敗，請確認網路連線後再試一次，或直接手動輸入');
+    return;
+  }
+  overlay.style.display = 'none';
+
+  const parsed = parseOcrText(combinedText);
+  editing = Object.assign(emptyPolicy(), parsed);
+  document.getElementById('modal-title').textContent = '確認辨識結果（新增保單）';
+  renderModalBody();
+  document.getElementById('modal-overlay').style.display = 'flex';
+  showError('已自動帶入可辨識到的欄位，請仔細核對後再儲存（拍照辨識可能有誤植，尤其是險種明細表格）');
+}
+
+function ocrLines(text){
+  return text.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+}
+
+function ocrValueAfterLabel(lines, labels){
+  for(let i=0;i<lines.length;i++){
+    for(const label of labels){
+      const idx = lines[i].indexOf(label);
+      if(idx === -1) continue;
+      let rest = lines[i].slice(idx + label.length).replace(/^[:：\s]+/, '').trim();
+      if(rest) return rest;
+      // value likely on next non-empty line(s)
+      for(let j=i+1; j<Math.min(i+3, lines.length); j++){
+        if(lines[j] && !labels.some(l=>lines[j].includes(l))){
+          return lines[j].trim();
+        }
+      }
+    }
+  }
+  return '';
+}
+
+function findFirstDateWestern(str){
+  const m = str.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  return m ? `${m[1]}/${String(+m[2]).padStart(2,'0')}/${String(+m[3]).padStart(2,'0')}` : '';
+}
+
+function parseOcrText(text){
+  const lines = ocrLines(text);
+  const flat = lines.join(' ');
+  const out = {};
+
+  out.policyNumber = ocrValueAfterLabel(lines, ['保單號碼']).replace(/\s/g,'');
+  out.currency = ocrValueAfterLabel(lines, ['保單幣別']) || '台幣';
+  out.status = ocrValueAfterLabel(lines, ['保單狀態']);
+  out.advanceStatus = ocrValueAfterLabel(lines, ['墊繳狀態']);
+  out.insured = ocrValueAfterLabel(lines, ['被保險人']).replace(/\s/g,'');
+  out.applicant = ocrValueAfterLabel(lines, ['要保人']).replace(/\s/g,'');
+  out.phone = ocrValueAfterLabel(lines, ['聯絡電話','電話']);
+
+  // effective date: look for a block near 保單生效日 with a western-format date
+  {
+    const idx = lines.findIndex(l=>l.includes('保單生效日'));
+    if(idx !== -1){
+      for(let j=idx; j<Math.min(idx+4, lines.length); j++){
+        const d = findFirstDateWestern(lines[j]);
+        if(d){ out.effectiveDate = d; break; }
+      }
+    }
+  }
+
+  // pay method: prefer the one under 繳費方式 heading; 主約繳法 also appears (年繳/月繳 etc.)
+  const payMethodVal = ocrValueAfterLabel(lines, ['主約繳法']);
+  if(payMethodVal) out.payMethod = payMethodVal;
+
+  const payChannelVal = ocrValueAfterLabel(lines, ['繳費方式']);
+  if(payChannelVal){
+    out.payChannel = payChannelVal;
+    const dash = payChannelVal.split(/[-－]/);
+    if(dash.length > 1) out.bank = dash[dash.length-1].trim();
+  }
+
+  const cardVal = ocrValueAfterLabel(lines, ['卡號']);
+  if(cardVal){
+    const digits = cardVal.match(/(\d{2,4})\s*$/);
+    if(digits) out.cardLast4 = digits[1].slice(-4);
+  }
+
+  const expiryVal = ocrValueAfterLabel(lines, ['信用卡有效期限','有效期限']);
+  {
+    const m = (expiryVal||flat).match(/(\d{1,2})\s*\/\s*(\d{2,4})/);
+    if(m) out.cardExpiry = `${m[1]}/${m[2].slice(-2)}`;
+  }
+
+  // renewal dates often appear together in one sentence
+  {
+    const dueMatch = flat.match(/下期應繳日期\s*[:：]?\s*(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/);
+    if(dueMatch) out.nextDueDate = findFirstDateWestern(dueMatch[1]);
+    const deductMatch = flat.match(/預計扣款日\s*[:：]?\s*(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/);
+    if(deductMatch) out.nextDeductDate = findFirstDateWestern(deductMatch[1]);
+  }
+
+  // beneficiaries: repeated "姓名" + "分配方式/比例" pairs anywhere in the document
+  {
+    const beneficiaries = [];
+    for(let i=0;i<lines.length;i++){
+      if(/^姓名[:：]?$/.test(lines[i]) || lines[i]==='姓名'){
+        let name = '';
+        for(let j=i+1;j<Math.min(i+3,lines.length);j++){
+          if(lines[j] && lines[j] !== '姓名'){ name = lines[j]; break; }
+        }
+        let rank = '';
+        for(let j=i+1;j<Math.min(i+8,lines.length);j++){
+          if(lines[j].includes('順位')){ rank = lines[j]; break; }
+        }
+        if(name) beneficiaries.push({ id: uid(), name: name.replace(/[:：]/g,'').trim(), rank: rank || '' });
+      }
+    }
+    if(beneficiaries.length) out.beneficiaries = beneficiaries;
+  }
+
+  // coverage rows: best-effort — look for known product-code style lines followed by a Chinese
+  // product name and a plausible premium number nearby. This is the least reliable part of OCR
+  // (table layouts vary), so it's left fully editable for manual correction.
+  {
+    const coverages = [];
+    const codeLineRe = /^[0-9A-Z]{2,10}$/;
+    for(let i=0;i<lines.length;i++){
+      if(codeLineRe.test(lines[i]) && /[A-Z]/.test(lines[i])){
+        let name = '';
+        for(let j=i+1;j<Math.min(i+3,lines.length);j++){
+          if(/[\u4e00-\u9fa5]/.test(lines[j])){ name = lines[j]; break; }
+        }
+        if(!name) continue;
+        let amount='', status='有效', effDate='', premium='';
+        for(let j=i;j<Math.min(i+8,lines.length);j++){
+          if(!status || status==='有效'){ if(lines[j].includes('有效')) status='有效'; if(lines[j].includes('停效')) status='停效'; }
+          const d = findFirstDateWestern(lines[j]);
+          if(d && !effDate) effDate = d;
+        }
+        for(let j=i+1;j<Math.min(i+10,lines.length);j++){
+          const numMatch = lines[j].match(/^[\d,]{2,7}$/);
+          if(numMatch){ premium = numMatch[0]; break; }
+        }
+        coverages.push({ id: uid(), name: `${name} (${lines[i]})`, amount, status, effectiveDate: effDate, premium });
+      }
+    }
+    if(coverages.length) out.coverages = coverages;
+  }
+
+  // free-text note capturing anything we couldn't confidently structure, for manual review
+  out.notes = '（拍照辨識來源，請核對內容）';
+
+  return out;
+}
+
+
+loadData();
+switchTab('dashboard');
+renderList();
+</script>
+</body>
+</html>
