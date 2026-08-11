@@ -919,6 +919,47 @@ function commitEdit(){
 }
 
 /* ---------- OCR: photo/upload recognition ---------- */
+async function preprocessImageForOcr(file){
+  const imgUrl = URL.createObjectURL(file);
+  const img = await new Promise((res, rej)=>{
+    const im = new Image();
+    im.onload = ()=>res(im);
+    im.onerror = rej;
+    im.src = imgUrl;
+  });
+  // Upscale small screenshots — Tesseract does noticeably better on larger strokes.
+  const scale = img.width < 1400 ? 2 : 1.3;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  URL.revokeObjectURL(imgUrl);
+
+  // Grayscale + contrast stretch: flattens screenshot backgrounds/gradients and makes
+  // text edges sharper, which measurably helps Tesseract's Chinese recognition.
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = imgData.data;
+  let min = 255, max = 0;
+  const gray = new Uint8ClampedArray(d.length / 4);
+  for(let i=0, p=0; i<d.length; i+=4, p++){
+    const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+    gray[p] = g;
+    if(g < min) min = g;
+    if(g > max) max = g;
+  }
+  const range = Math.max(1, max - min);
+  for(let i=0, p=0; i<d.length; i+=4, p++){
+    let v = (gray[p] - min) * (255 / range);
+    v = v < 110 ? v*0.6 : Math.min(255, v*1.08); // deepen dark text, brighten light background
+    d[i] = d[i+1] = d[i+2] = v;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return canvas;
+}
+
 async function handleOcrFiles(evt){
   const files = Array.from(evt.target.files || []);
   evt.target.value = ''; // allow re-selecting the same file later
@@ -939,26 +980,35 @@ async function handleOcrFiles(evt){
   overlay.style.display = 'flex';
 
   let combinedText = '';
+  let worker;
   try{
+    statusEl.textContent = '準備辨識引擎';
+    subEl.textContent = '首次使用需下載中文字庫（約數MB）…';
+    worker = await Tesseract.createWorker('chi_tra+eng', 1, {
+      langPath: 'https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0',
+      logger: m=>{
+        if(m.status && m.progress != null){
+          const labelMap = {
+            'loading tesseract core':'載入核心模組',
+            'initializing tesseract':'初始化',
+            'loading language traineddata':'下載中文字庫',
+            'initializing api':'準備辨識',
+            'recognizing text':'分析文字'
+          };
+          const label = labelMap[m.status] || m.status;
+          subEl.textContent = `${label} ${Math.round(m.progress*100)}%`;
+        }
+      }
+    });
+    // PSM 6 = "uniform block of text" — better suited to structured app/table screenshots
+    // than the default automatic layout detection.
+    await worker.setParameters({ tessedit_pageseg_mode: '6' });
+
     for(let i=0; i<files.length; i++){
       statusEl.textContent = `辨識中 (${i+1}/${files.length})`;
-      subEl.textContent = '正在下載中文字庫／讀取圖片…';
-      const { data } = await Tesseract.recognize(files[i], 'chi_tra+eng', {
-        langPath: 'https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_fast',
-        logger: m=>{
-          if(m.status && m.progress != null){
-            const labelMap = {
-              'loading tesseract core':'載入核心模組',
-              'initializing tesseract':'初始化',
-              'loading language traineddata':'下載語言資料',
-              'initializing api':'準備辨識',
-              'recognizing text':'分析文字'
-            };
-            const label = labelMap[m.status] || m.status;
-            subEl.textContent = `${label} ${Math.round(m.progress*100)}%`;
-          }
-        }
-      });
+      subEl.textContent = '影像前處理中…';
+      const canvas = await preprocessImageForOcr(files[i]);
+      const { data } = await worker.recognize(canvas);
       combinedText += '\n' + (data.text || '');
     }
   }catch(e){
@@ -966,8 +1016,10 @@ async function handleOcrFiles(evt){
     console.error('OCR error:', e);
     const detail = (e && (e.message || e.toString())) || '未知錯誤';
     showError(`圖片辨識失敗（${detail}）。請確認是用 Safari／Chrome 開啟此網址、網路連線正常，若持續失敗請直接手動輸入`);
+    if(worker){ try{ await worker.terminate(); }catch(_e){} }
     return;
   }
+  if(worker){ try{ await worker.terminate(); }catch(_e){} }
   overlay.style.display = 'none';
 
   const parsed = parseOcrText(combinedText);
