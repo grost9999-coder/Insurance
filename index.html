@@ -334,7 +334,7 @@ function emptyPolicy(){
   return {
     id: uid(), insurer:'南山人壽', policyNumber:'', currency:'台幣', coverageUnit:'元', effectiveDate:'',
     status:'有效-持續繳費中', payMethod:'年繳', advanceStatus:'無', insured:'', applicant:'',
-    insuredBirthday:'', applicantBirthday:'', phone:'',
+    insuredBirthday:'', applicantBirthday:'', insuredIdNumber:'', applicantIdNumber:'', phone:'',
     payChannel:'', bank:'', cardLast4:'', cardExpiry:'', nextDueDate:'', nextDeductDate:'',
     lastCheckDate:'', nextCheckDate:'', checkNotes:'',
     coverages:[emptyCoverage()], beneficiaries:[emptyBeneficiary()], logs:[], notes:'',
@@ -354,6 +354,8 @@ function loadData(){
       policies.forEach(p=>{
         if(!('insuredBirthday' in p)) p.insuredBirthday = p.birthday || '';
         if(!('applicantBirthday' in p)) p.applicantBirthday = '';
+        if(!('insuredIdNumber' in p)) p.insuredIdNumber = '';
+        if(!('applicantIdNumber' in p)) p.applicantIdNumber = '';
         if(!('coverageUnit' in p)) p.coverageUnit='元';
         if(!('phone' in p)) p.phone='';
         if(!('lastCheckDate' in p)) p.lastCheckDate='';
@@ -851,6 +853,8 @@ function renderMain(){
         <div><div class="field-label">要保人</div><div class="field-value">${esc(p.applicant)||'—'}</div></div>
         <div><div class="field-label">被保險人生日</div><div class="field-value" style="font-weight:400;">${esc(p.insuredBirthday)||'—'}</div></div>
         <div><div class="field-label">要保人生日</div><div class="field-value" style="font-weight:400;">${esc(p.applicantBirthday)||'—'}</div></div>
+        <div><div class="field-label">被保險人身分證字號</div><div class="field-value mono" style="font-weight:400;">${esc(p.insuredIdNumber)||'—'}</div></div>
+        <div><div class="field-label">要保人身分證字號</div><div class="field-value mono" style="font-weight:400;">${esc(p.applicantIdNumber)||'—'}</div></div>
         <div><div class="field-label">聯絡電話</div><div class="field-value" style="font-weight:400;">${esc(p.phone)||'—'}</div></div>
         <div><div class="field-label">保單生效日</div><div class="field-value" style="font-weight:400;">${esc(p.effectiveDate)||'—'}</div></div>
         <div><div class="field-label">主約繳法／墊繳狀態</div><div class="field-value" style="font-weight:400;">${esc(p.payMethod)} ／ ${esc(p.advanceStatus)}</div></div>
@@ -938,7 +942,8 @@ function renderMain(){
 
 /* ---------- CSV export / import (backup, bulk edit, external tools) ---------- */
 const CSV_COLUMNS = [
-  'policyNumber','insurer','insured','applicant','insuredBirthday','applicantBirthday','phone','currency','coverageUnit',
+  'policyNumber','insurer','insured','applicant','insuredBirthday','applicantBirthday',
+  'insuredIdNumber','applicantIdNumber','phone','currency','coverageUnit',
   'effectiveDate','status','payMethod','advanceStatus','payChannel','bank','cardLast4','cardExpiry',
   'nextDueDate','nextDeductDate','lastCheckDate','nextCheckDate','checkNotes','notes',
   'coveragesJson','beneficiariesJson','logsJson'
@@ -1110,6 +1115,8 @@ function renderModalBody(){
       ${field('要保人','applicant')}
       ${field('被保險人生日','insuredBirthday','YYYY/MM/DD 或 MM/DD')}
       ${field('要保人生日','applicantBirthday','YYYY/MM/DD 或 MM/DD')}
+      ${field('被保險人身分證字號','insuredIdNumber')}
+      ${field('要保人身分證字號','applicantIdNumber')}
       ${field('聯絡電話','phone')}
       ${field('保單幣別','currency')}
       ${field('幣值單位','coverageUnit','例：元')}
@@ -1388,7 +1395,7 @@ async function handleOcrFiles(evt){
 
 function mergeOcrIntoEditing(parsed){
   if(!editing) return;
-  const scalarKeys = ['policyNumber','currency','coverageUnit','status','advanceStatus','insured','applicant','phone',
+  const scalarKeys = ['policyNumber','currency','coverageUnit','status','advanceStatus','insured','applicant','phone','insuredIdNumber',
     'effectiveDate','payMethod','payChannel','bank','cardLast4','cardExpiry','nextDueDate','nextDeductDate'];
   scalarKeys.forEach(k=>{
     if(parsed[k]) editing[k] = parsed[k];
@@ -1438,7 +1445,7 @@ function ocrLines(text){
 // field when OCR merges multiple labels onto one line (e.g. "A058051900保單幣別:台幣").
 const ALL_OCR_LABELS = [
   '保單號碼','保單幣別','保單生效日','保單狀態','主約繳法','墊繳狀態','被保險人','要保人','查詢日期',
-  '聯絡電話','電話','繳費方式','卡號','信用卡有效期限','有效期限','下期應繳日期','預計扣款日',
+  '聯絡電話','電話','繳費方式','卡號','信用卡有效期限','有效期限','下期應繳日期','預計扣款日','身分證字號','身分證號',
   '幣值單位','姓名','分配方式/比例','分配方式','一次給付','分期給付','給付期間','給付方式',
   '銀行名稱','分行名稱','帳號','聯絡地址','險種名稱','保額','保障狀態','生效日','停效日','保費','職業等級'
 ];
@@ -1495,6 +1502,10 @@ function parseOcrText(text){
   out.insured = ocrValueAfterLabel(lines, ['被保險人']).replace(/\s/g,'');
   out.applicant = ocrValueAfterLabel(lines, ['要保人']).replace(/\s/g,'');
   out.phone = ocrValueAfterLabel(lines, ['聯絡電話','電話']);
+  {
+    const idVal = ocrValueAfterLabel(lines, ['身分證字號','身分證號']).replace(/\s/g,'');
+    if(idVal) out.insuredIdNumber = idVal;
+  }
 
   // effective date: look for a block near 保單生效日 with a western-format date
   {
