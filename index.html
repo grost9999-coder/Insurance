@@ -334,11 +334,11 @@ function emptyPolicy(){
   return {
     id: uid(), insurer:'南山人壽', policyNumber:'', currency:'台幣', coverageUnit:'元', effectiveDate:'',
     status:'有效-持續繳費中', payMethod:'年繳', advanceStatus:'無', insured:'', applicant:'',
-    birthday:'', phone:'',
+    insuredBirthday:'', applicantBirthday:'', phone:'',
     payChannel:'', bank:'', cardLast4:'', cardExpiry:'', nextDueDate:'', nextDeductDate:'',
     lastCheckDate:'', nextCheckDate:'', checkNotes:'',
     coverages:[emptyCoverage()], beneficiaries:[emptyBeneficiary()], logs:[], notes:'',
-    contactedFor:{ birthday:'', check:'', renew:'' }
+    contactedFor:{ birthday_insured:'', birthday_applicant:'', check:'', renew:'' }
   };
 }
 
@@ -352,14 +352,15 @@ function loadData(){
     if(raw){
       policies = JSON.parse(raw);
       policies.forEach(p=>{
-        if(!('birthday' in p)) p.birthday='';
+        if(!('insuredBirthday' in p)) p.insuredBirthday = p.birthday || '';
+        if(!('applicantBirthday' in p)) p.applicantBirthday = '';
         if(!('coverageUnit' in p)) p.coverageUnit='元';
         if(!('phone' in p)) p.phone='';
         if(!('lastCheckDate' in p)) p.lastCheckDate='';
         if(!('nextCheckDate' in p)) p.nextCheckDate='';
         if(!('checkNotes' in p)) p.checkNotes='';
         if(!('logs' in p)) p.logs=[];
-        if(!('contactedFor' in p)) p.contactedFor={ birthday:'', check:'', renew:'' };
+        if(!('contactedFor' in p)) p.contactedFor={ birthday_insured:'', birthday_applicant:'', check:'', renew:'' };
       });
       if(policies.length) selectedId = policies[0].id;
     } else {
@@ -460,15 +461,23 @@ function isContacted(p, kind, dateValue){
 }
 
 function getReminders(){
-  const birthdayList = [];
+  const insuredBirthdayList = [];
+  const applicantBirthdayList = [];
   const checkList = [];
   const renewalList = [];
   policies.forEach(p=>{
-    const bd = parseDateFlexible(p.birthday);
-    if(bd){
-      const days = daysUntilNextOccurrence(bd);
+    const bdInsured = parseDateFlexible(p.insuredBirthday);
+    if(bdInsured){
+      const days = daysUntilNextOccurrence(bdInsured);
       if(days !== null && days <= REMIND_WINDOW_DAYS){
-        birthdayList.push({ p, days, kind:'birthday', done: isContacted(p,'birthday',p.birthday) });
+        insuredBirthdayList.push({ p, days, kind:'birthday_insured', done: isContacted(p,'birthday_insured',p.insuredBirthday) });
+      }
+    }
+    const bdApplicant = parseDateFlexible(p.applicantBirthday);
+    if(bdApplicant && p.applicant && p.applicant !== p.insured){
+      const days = daysUntilNextOccurrence(bdApplicant);
+      if(days !== null && days <= REMIND_WINDOW_DAYS){
+        applicantBirthdayList.push({ p, days, kind:'birthday_applicant', done: isContacted(p,'birthday_applicant',p.applicantBirthday) });
       }
     }
     const nc = parseDateFlexible(p.nextCheckDate);
@@ -486,10 +495,11 @@ function getReminders(){
       }
     }
   });
-  birthdayList.sort((a,b)=>a.days-b.days);
+  insuredBirthdayList.sort((a,b)=>a.days-b.days);
+  applicantBirthdayList.sort((a,b)=>a.days-b.days);
   checkList.sort((a,b)=>a.days-b.days);
   renewalList.sort((a,b)=>a.days-b.days);
-  return { birthdayList, checkList, renewalList };
+  return { insuredBirthdayList, applicantBirthdayList, checkList, renewalList };
 }
 
 function daysLabel(days){
@@ -537,8 +547,8 @@ function toggleSegmentFilter(key){
 function renderList(){
   const q = document.getElementById('search-input').value.trim().toLowerCase();
   const listEl = document.getElementById('list');
-  const { birthdayList, checkList, renewalList } = getReminders();
-  const flagIds = new Set([...birthdayList, ...checkList, ...renewalList].filter(x=>!x.done).map(x=>x.p.id));
+  const { insuredBirthdayList, applicantBirthdayList, checkList, renewalList } = getReminders();
+  const flagIds = new Set([...insuredBirthdayList, ...applicantBirthdayList, ...checkList, ...renewalList].filter(x=>!x.done).map(x=>x.p.id));
 
   renderSegmentChips();
 
@@ -596,9 +606,13 @@ function openLineShare(evt, text){
 
 /* ---- message template library for marketing outreach ---- */
 const MESSAGE_TEMPLATES = {
-  birthday: [
+  birthday_insured: [
     p=>`${p.insured} 您好，喬鈺祝您生日快樂！祝您身體健康、平安順心，若想聊聊保障規劃歡迎隨時找我 🎂`,
     p=>`${p.insured} 生日快樂！趁生日也提醒您，保障需求會隨年紀增加而改變，要不要幫您安排一次保單健檢？`
+  ],
+  birthday_applicant: [
+    p=>`${p.applicant} 您好，喬鈺祝您生日快樂！祝您身體健康、平安順心，若想聊聊保障規劃歡迎隨時找我 🎂`,
+    p=>`${p.applicant} 生日快樂！趁生日也提醒您，名下保單（${p.policyNumber}）的保障是否還符合現況，要不要找時間聊聊？`
   ],
   check: [
     p=>`${p.insured} 您好，您的保單（${p.policyNumber}）建議安排一次保單健檢，確認保障是否還符合現在的需求，方便的話約個時間聊聊嗎？`,
@@ -610,7 +624,8 @@ const MESSAGE_TEMPLATES = {
   ]
 };
 const MESSAGE_TEMPLATE_LABELS = {
-  birthday: ['祝賀＋開放式邀約','祝賀＋健檢切入'],
+  birthday_insured: ['祝賀＋開放式邀約','祝賀＋健檢切入'],
+  birthday_applicant: ['祝賀＋開放式邀約','祝賀＋保單健檢切入'],
   check: ['直接建議健檢','政策更新切入'],
   renew: ['提醒繳費','提醒＋加保機會']
 };
@@ -623,9 +638,9 @@ function reminderMessage(kind, p, variantIdx){
 }
 
 /* ---- task state: which template variant, done-list visibility, batch selection ---- */
-let templateChoice = { birthday:0, check:0, renew:0 };
-let showDone = { birthday:false, check:false, renew:false };
-let batchSelected = { birthday:new Set(), check:new Set(), renew:new Set() };
+let templateChoice = { birthday_insured:0, birthday_applicant:0, check:0, renew:0 };
+let showDone = { birthday_insured:false, birthday_applicant:false, check:false, renew:false };
+let batchSelected = { birthday_insured:new Set(), birthday_applicant:new Set(), check:new Set(), renew:new Set() };
 
 function setTemplateChoice(kind, idx){ templateChoice[kind] = +idx; renderMain(); }
 function toggleShowDone(kind){ showDone[kind] = !showDone[kind]; renderMain(); }
@@ -637,8 +652,8 @@ function markContacted(evt, policyId, kind){
   if(evt) evt.stopPropagation();
   const p = policies.find(x=>x.id===policyId);
   if(!p) return;
-  if(!p.contactedFor) p.contactedFor = { birthday:'', check:'', renew:'' };
-  const valueMap = { birthday:p.birthday, check:p.nextCheckDate, renew:p.nextDueDate };
+  if(!p.contactedFor) p.contactedFor = { birthday_insured:'', birthday_applicant:'', check:'', renew:'' };
+  const valueMap = { birthday_insured:p.insuredBirthday, birthday_applicant:p.applicantBirthday, check:p.nextCheckDate, renew:p.nextDueDate };
   p.contactedFor[kind] = valueMap[kind] || 'done';
   saveData();
   batchSelected[kind].delete(policyId);
@@ -760,8 +775,8 @@ function reminderGroupHtml(title, iconSvg, items, sublineFn, kind){
 
 function renderDashboard(){
   const el = document.getElementById('main-content');
-  const { birthdayList, checkList, renewalList } = getReminders();
-  const pendingTotal = [birthdayList, checkList, renewalList].reduce((s,list)=> s + list.filter(it=>!it.done).length, 0);
+  const { insuredBirthdayList, applicantBirthdayList, checkList, renewalList } = getReminders();
+  const pendingTotal = [insuredBirthdayList, applicantBirthdayList, checkList, renewalList].reduce((s,list)=> s + list.filter(it=>!it.done).length, 0);
 
   const cakeIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M4 21v-6a4 4 0 014-4h8a4 4 0 014 4v6"/><path d="M2 21h20M12 3v4M8 7c0-1 1-2 1-3s-1-2-1-2M16 7c0-1 1-2 1-3s-1-2-1-2"/></svg>`;
   const checkIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`;
@@ -773,13 +788,12 @@ function renderDashboard(){
       <div class="stat-card" style="cursor:pointer;" onclick="switchTab('customers')"><div class="stat-num">${policies.length}</div><div class="stat-label">總客戶保單數 ›</div></div>
       <div class="stat-card"><div class="stat-num">${pendingTotal}</div><div class="stat-label">近 ${REMIND_WINDOW_DAYS} 天待處理提醒</div></div>
     </div>
-    ${reminderGroupHtml('生日提醒', cakeIcon, birthdayList, p=>`生日 ${esc(p.birthday)}・可安排問候或加保建議`, 'birthday')}
+    ${reminderGroupHtml('被保險人生日提醒', cakeIcon, insuredBirthdayList, p=>`生日 ${esc(p.insuredBirthday)}・可安排問候或加保建議`, 'birthday_insured')}
+    ${reminderGroupHtml('要保人生日提醒', cakeIcon, applicantBirthdayList, p=>`生日 ${esc(p.applicantBirthday)}・可安排問候或加保建議`, 'birthday_applicant')}
     ${reminderGroupHtml('保單健檢提醒', checkIcon, checkList, p=>`預計健檢日 ${esc(p.nextCheckDate)}`, 'check')}
     ${reminderGroupHtml('繳費／續約提醒', renewIcon, renewalList, p=>`下期應繳日 ${esc(p.nextDueDate)}`, 'renew')}
   </div>`;
 }
-
-/* ---------- customer detail ---------- */
 
 /* ---------- customer detail ---------- */
 function renderMain(){
@@ -835,7 +849,8 @@ function renderMain(){
         <div><div class="field-label">保單狀態</div><div style="margin-top:2px;">${statusPill(p.status)}</div></div>
         <div><div class="field-label">被保險人</div><div class="field-value">${esc(p.insured)||'—'}</div></div>
         <div><div class="field-label">要保人</div><div class="field-value">${esc(p.applicant)||'—'}</div></div>
-        <div><div class="field-label">生日</div><div class="field-value" style="font-weight:400;">${esc(p.birthday)||'—'}</div></div>
+        <div><div class="field-label">被保險人生日</div><div class="field-value" style="font-weight:400;">${esc(p.insuredBirthday)||'—'}</div></div>
+        <div><div class="field-label">要保人生日</div><div class="field-value" style="font-weight:400;">${esc(p.applicantBirthday)||'—'}</div></div>
         <div><div class="field-label">聯絡電話</div><div class="field-value" style="font-weight:400;">${esc(p.phone)||'—'}</div></div>
         <div><div class="field-label">保單生效日</div><div class="field-value" style="font-weight:400;">${esc(p.effectiveDate)||'—'}</div></div>
         <div><div class="field-label">主約繳法／墊繳狀態</div><div class="field-value" style="font-weight:400;">${esc(p.payMethod)} ／ ${esc(p.advanceStatus)}</div></div>
@@ -923,7 +938,7 @@ function renderMain(){
 
 /* ---------- CSV export / import (backup, bulk edit, external tools) ---------- */
 const CSV_COLUMNS = [
-  'policyNumber','insurer','insured','applicant','birthday','phone','currency','coverageUnit',
+  'policyNumber','insurer','insured','applicant','insuredBirthday','applicantBirthday','phone','currency','coverageUnit',
   'effectiveDate','status','payMethod','advanceStatus','payChannel','bank','cardLast4','cardExpiry',
   'nextDueDate','nextDeductDate','lastCheckDate','nextCheckDate','checkNotes','notes',
   'coveragesJson','beneficiariesJson','logsJson'
@@ -1093,7 +1108,8 @@ function renderModalBody(){
       ${field('保單號碼','policyNumber')}
       ${field('被保險人','insured')}
       ${field('要保人','applicant')}
-      ${field('生日','birthday','YYYY/MM/DD 或 MM/DD')}
+      ${field('被保險人生日','insuredBirthday','YYYY/MM/DD 或 MM/DD')}
+      ${field('要保人生日','applicantBirthday','YYYY/MM/DD 或 MM/DD')}
       ${field('聯絡電話','phone')}
       ${field('保單幣別','currency')}
       ${field('幣值單位','coverageUnit','例：元')}
@@ -1379,11 +1395,33 @@ function mergeOcrIntoEditing(parsed){
   });
   if(parsed.beneficiaries && parsed.beneficiaries.length){
     const existingBlank = editing.beneficiaries.length===1 && !editing.beneficiaries[0].name;
-    editing.beneficiaries = existingBlank ? parsed.beneficiaries : editing.beneficiaries.concat(parsed.beneficiaries);
+    if(existingBlank){
+      editing.beneficiaries = parsed.beneficiaries;
+    } else {
+      // match by name so re-scanning the same document corrects an existing row
+      // in place instead of piling up duplicates.
+      parsed.beneficiaries.forEach(newB=>{
+        const idx = editing.beneficiaries.findIndex(b=> b.name === newB.name);
+        if(idx !== -1) editing.beneficiaries[idx] = newB;
+        else editing.beneficiaries.push(newB);
+      });
+    }
   }
   if(parsed.coverages && parsed.coverages.length){
     const existingBlank = editing.coverages.length===1 && !editing.coverages[0].name;
-    editing.coverages = existingBlank ? parsed.coverages : editing.coverages.concat(parsed.coverages);
+    if(existingBlank){
+      editing.coverages = parsed.coverages;
+    } else {
+      // match by product code (embedded in the name as "名稱 (代碼)") so re-parsing after
+      // a parsing-bug fix updates the existing row's numbers instead of duplicating it.
+      const codeOf = name => (String(name).match(/\(([^()]+)\)\s*$/) || [])[1] || name;
+      parsed.coverages.forEach(newC=>{
+        const newCode = codeOf(newC.name);
+        const idx = editing.coverages.findIndex(c=> codeOf(c.name) === newCode);
+        if(idx !== -1) editing.coverages[idx] = newC;
+        else editing.coverages.push(newC);
+      });
+    }
   }
 }
 
