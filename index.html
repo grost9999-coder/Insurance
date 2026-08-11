@@ -1399,7 +1399,7 @@ function ocrLines(text){
 // Every label the parser looks for, used to stop a value from swallowing the next
 // field when OCR merges multiple labels onto one line (e.g. "A058051900保單幣別:台幣").
 const ALL_OCR_LABELS = [
-  '保單號碼','保單幣別','保單生效日','保單狀態','主約繳法','墊繳狀態','被保險人','要保人',
+  '保單號碼','保單幣別','保單生效日','保單狀態','主約繳法','墊繳狀態','被保險人','要保人','查詢日期',
   '聯絡電話','電話','繳費方式','卡號','信用卡有效期限','有效期限','下期應繳日期','預計扣款日',
   '幣值單位','姓名','分配方式/比例','分配方式','一次給付','分期給付','給付期間','給付方式',
   '銀行名稱','分行名稱','帳號','聯絡地址','險種名稱','保額','保障狀態','生效日','停效日','保費','職業等級'
@@ -1523,29 +1523,46 @@ function parseOcrText(text){
     if(beneficiaries.length) out.beneficiaries = beneficiaries;
   }
 
-  // coverage rows: best-effort — look for known product-code style lines followed by a Chinese
-  // product name and a plausible premium number nearby. This is the least reliable part of OCR
-  // (table layouts vary), so it's left fully editable for manual correction.
+  // coverage rows: the source table always follows this column order per row:
+  // 代碼, 名稱, 保額, 保障狀態(有效/停效), 生效日(民國), 生效日(西元), 停效日(-或日期), 保費, 職業等級(-或數字).
+  // Walking that fixed sequence (instead of grabbing "the first number found" as premium)
+  // avoids swapping 保額 and 保費, which was the previous bug.
   {
     const coverages = [];
     const codeLineRe = /^[0-9A-Z]{2,10}$/;
+    const isDateLikeLine = l => /民國|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/.test(l) || l === '-';
     for(let i=0;i<lines.length;i++){
       if(codeLineRe.test(lines[i]) && /[A-Z]/.test(lines[i])){
-        let name = '';
+        let nameIdx = -1, name = '';
         for(let j=i+1;j<Math.min(i+3,lines.length);j++){
-          if(/[\u4e00-\u9fa5]/.test(lines[j])){ name = lines[j]; break; }
+          if(/[\u4e00-\u9fa5]/.test(lines[j])){ name = lines[j]; nameIdx = j; break; }
         }
         if(!name) continue;
-        let amount='', status='有效', effDate='', premium='';
-        for(let j=i;j<Math.min(i+8,lines.length);j++){
-          if(!status || status==='有效'){ if(lines[j].includes('有效')) status='有效'; if(lines[j].includes('停效')) status='停效'; }
-          const d = findFirstDateWestern(lines[j]);
+
+        let cursor = nameIdx + 1;
+        let amount = '';
+        if(lines[cursor] && lines[cursor] !== '有效' && lines[cursor] !== '停效'){
+          amount = lines[cursor]; cursor++;
+        }
+
+        let status = '有效';
+        if(lines[cursor] && (lines[cursor].includes('有效') || lines[cursor].includes('停效'))){
+          status = lines[cursor].includes('停效') ? '停效' : '有效';
+          cursor++;
+        }
+
+        let effDate = '';
+        for(let k=0; k<4 && cursor<lines.length && isDateLikeLine(lines[cursor]); k++){
+          const d = findFirstDateWestern(lines[cursor]);
           if(d && !effDate) effDate = d;
+          cursor++;
         }
-        for(let j=i+1;j<Math.min(i+10,lines.length);j++){
-          const numMatch = lines[j].match(/^[\d,]{2,7}$/);
-          if(numMatch){ premium = numMatch[0]; break; }
+
+        let premium = '';
+        if(lines[cursor] && /^[\d,]+$/.test(lines[cursor])){
+          premium = lines[cursor];
         }
+
         coverages.push({ id: uid(), name: `${name} (${lines[i]})`, amount, status, effectiveDate: effDate, premium });
       }
     }
