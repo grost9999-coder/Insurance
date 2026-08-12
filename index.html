@@ -69,6 +69,10 @@
     display:none; align-items:center; gap:8px; padding:8px 18px;
     background:#FBF0E7; color:var(--bad-fg); border-bottom:1px solid #F0D9C8; font-size:13px;
   }
+  #success-bar{
+    display:none; align-items:center; gap:8px; padding:8px 18px;
+    background:var(--ok-bg); color:var(--ok-fg); border-bottom:1px solid #D3E6DC; font-size:13px;
+  }
 
   #nav-tabs{ display:flex; gap:4px; border-bottom:1px solid var(--line); background:var(--card); padding:0 18px; flex-shrink:0; }
   .tab-btn{
@@ -155,8 +159,7 @@
   .reminder-name{ font-size:13px; font-weight:600; }
   .reminder-sub{ font-size:11px; color:var(--muted); margin-top:1px; }
 
-  .dash-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  @media (max-width:600px){ .dash-grid{ grid-template-columns:1fr; } }
+  .dash-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:16px; }
   .stat-card{ border:1px solid var(--line); border-radius:12px; background:#fff; padding:14px 16px; }
   .stat-num{ font-size:24px; font-weight:700; font-family:'Noto Serif TC',serif; color:var(--ink); }
   .stat-label{ font-size:11px; color:var(--muted); margin-top:2px; }
@@ -227,6 +230,9 @@
     </div>
     <div style="display:flex; align-items:center; gap:10px;">
       <span id="saving-indicator" style="display:none; font-size:11px; color:var(--muted);">儲存中…</span>
+      <button class="btn btn-ghost" style="padding:8px;" onclick="openLockSettings()" title="密碼鎖設定">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16233A" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </button>
       <button class="btn btn-primary" onclick="openNewPolicy()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         新增保單
@@ -237,6 +243,10 @@
   <div id="error-bar">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B5502C" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
     <span id="error-text"></span>
+  </div>
+  <div id="success-bar">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    <span id="success-text"></span>
   </div>
 
   <nav id="nav-tabs">
@@ -295,6 +305,32 @@
 </div>
 <style>@keyframes spin{ to{ transform:rotate(360deg); } }</style>
 
+<!-- App lock screen: shown before any content when a PIN is set, re-locked on every page load -->
+<div id="lock-overlay" style="display:none; position:fixed; inset:0; background:#16233A; align-items:center; justify-content:center; z-index:100; padding:20px;">
+  <div style="width:100%; max-width:300px; text-align:center;">
+    <div style="width:48px; height:48px; margin:0 auto 16px; border-radius:12px; background:#1F3050; display:flex; align-items:center; justify-content:center;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    </div>
+    <p class="serif" style="color:#F3F1EA; font-size:16px; margin:0 0 16px;">請輸入密碼解鎖</p>
+    <input id="lock-input" type="password" inputmode="numeric" placeholder="密碼" style="width:100%; text-align:center; font-size:20px; letter-spacing:4px; border:none; border-radius:8px; padding:12px; background:#F3F1EA; outline:none;" onkeydown="if(event.key==='Enter') tryUnlock()" />
+    <p id="lock-error" style="color:#E8A688; font-size:12px; margin:10px 0 0; min-height:16px;"></p>
+    <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:10px;" onclick="tryUnlock()">解鎖</button>
+  </div>
+</div>
+
+<!-- Lock settings modal: set / change / remove PIN -->
+<div id="lock-settings-overlay" style="display:none; position:fixed; inset:0; background:rgba(22,35,58,.55); align-items:center; justify-content:center; z-index:90; padding:16px;">
+  <div style="background:#FBFAF6; border-radius:14px; padding:20px; width:100%; max-width:320px; box-shadow:0 20px 50px rgba(0,0,0,.3);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 class="serif" style="margin:0; font-size:15px;">密碼鎖設定</h3>
+      <button class="btn btn-ghost" style="padding:4px;" onclick="closeLockSettings()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B93A1" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="lock-settings-body"></div>
+  </div>
+</div>
+
 <div id="batch-overlay" style="display:none; position:fixed; inset:0; background:rgba(22,35,58,.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
   <div style="background:#FBFAF6; border-radius:14px; padding:20px; width:100%; max-width:340px; box-shadow:0 20px 50px rgba(0,0,0,.3);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -351,6 +387,7 @@ function loadData(){
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
       policies = JSON.parse(raw);
+      if(!Array.isArray(policies)) throw new Error('資料格式不正確');
       policies.forEach(p=>{
         if(!('insuredBirthday' in p)) p.insuredBirthday = p.birthday || '';
         if(!('applicantBirthday' in p)) p.applicantBirthday = '';
@@ -367,10 +404,15 @@ function loadData(){
       if(policies.length) selectedId = policies[0].id;
     } else {
       policies = seedPolicies();
-      selectedId = policies[0].id;
+      if(policies.length) selectedId = policies[0].id;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(policies));
     }
-  }catch(e){ /* ignore */ }
+  }catch(e){
+    console.error('loadData error:', e);
+    policies = [];
+    selectedId = null;
+    showError('讀取本機資料時發生錯誤，資料可能已損毀。請勿直接新增保單覆蓋——建議先檢查瀏覽器儲存空間，或用 CSV 備份還原。');
+  }
 }
 
 function saveData(){
@@ -388,6 +430,15 @@ function saveData(){
 function showError(msg){
   document.getElementById('error-text').textContent = msg;
   document.getElementById('error-bar').style.display = 'flex';
+  hideSuccess();
+}
+function showSuccess(msg){
+  document.getElementById('success-text').textContent = msg;
+  document.getElementById('success-bar').style.display = 'flex';
+  hideError();
+}
+function hideSuccess(){
+  document.getElementById('success-bar').style.display = 'none';
 }
 function hideError(){
   document.getElementById('error-bar').style.display = 'none';
@@ -775,10 +826,27 @@ function reminderGroupHtml(title, iconSvg, items, sublineFn, kind){
   </div>`;
 }
 
+function computeMonthlyRevenue(){
+  const now = new Date();
+  const ym = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}`;
+  let total = 0, count = 0;
+  policies.forEach(p=>{
+    (p.logs||[]).forEach(l=>{
+      if(l.date && l.date.replace(/-/g,'/').startsWith(ym)){
+        total += parseFloat(String(l.amount).replace(/,/g,'')) || 0;
+        count++;
+      }
+    });
+  });
+  return { total, count };
+}
+
 function renderDashboard(){
   const el = document.getElementById('main-content');
   const { insuredBirthdayList, applicantBirthdayList, checkList, renewalList } = getReminders();
   const pendingTotal = [insuredBirthdayList, applicantBirthdayList, checkList, renewalList].reduce((s,list)=> s + list.filter(it=>!it.done).length, 0);
+  const revenue = computeMonthlyRevenue();
+  const gapCount = policies.filter(p=> computeInsightTags(p).some(t=>t.label.startsWith('缺'))).length;
 
   const cakeIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M4 21v-6a4 4 0 014-4h8a4 4 0 014 4v6"/><path d="M2 21h20M12 3v4M8 7c0-1 1-2 1-3s-1-2-1-2M16 7c0-1 1-2 1-3s-1-2-1-2"/></svg>`;
   const checkIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6F62" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`;
@@ -789,6 +857,8 @@ function renderDashboard(){
     <div class="dash-grid" style="margin-bottom:16px;">
       <div class="stat-card" style="cursor:pointer;" onclick="switchTab('customers')"><div class="stat-num">${policies.length}</div><div class="stat-label">總客戶保單數 ›</div></div>
       <div class="stat-card"><div class="stat-num">${pendingTotal}</div><div class="stat-label">近 ${REMIND_WINDOW_DAYS} 天待處理提醒</div></div>
+      <div class="stat-card"><div class="stat-num mono" style="font-size:20px;">${fmtMoney(revenue.total)}</div><div class="stat-label">本月回購／服務金額（${revenue.count}筆）</div></div>
+      <div class="stat-card" style="cursor:pointer;" onclick="switchTab('customers')"><div class="stat-num">${gapCount}</div><div class="stat-label">有保障缺口的客戶 ›</div></div>
     </div>
     ${reminderGroupHtml('被保險人生日提醒', cakeIcon, insuredBirthdayList, p=>`生日 ${esc(p.insuredBirthday)}・可安排問候或加保建議`, 'birthday_insured')}
     ${reminderGroupHtml('要保人生日提醒', cakeIcon, applicantBirthdayList, p=>`生日 ${esc(p.applicantBirthday)}・可安排問候或加保建議`, 'birthday_applicant')}
@@ -1032,7 +1102,7 @@ function handleCsvImport(evt){
       saveData();
       renderList();
       renderMain();
-      showError(`已匯入 ${imported.length} 筆保單資料（新增方式加入，未覆蓋原有資料）`);
+      showSuccess(`已匯入 ${imported.length} 筆保單資料（新增方式加入，未覆蓋原有資料）`);
     }catch(e){
       showError('CSV 匯入失敗，請確認檔案格式是否正確');
     }
@@ -1321,7 +1391,7 @@ function parseTextInput(){
   lastOcrRawText = val;
   mergeOcrIntoEditing(parsed);
   renderModalBody();
-  showError('已將貼上文字解析出的欄位帶入下方表單，請仔細核對後再儲存');
+  showSuccess('已將貼上文字解析出的欄位帶入下方表單，請仔細核對後再儲存');
 }
 
 async function handleOcrFiles(evt){
@@ -1390,7 +1460,7 @@ async function handleOcrFiles(evt){
   lastOcrRawText = combinedText;
   mergeOcrIntoEditing(parsed);
   renderModalBody();
-  showError('已將辨識到的欄位帶入下方表單，請仔細核對後再儲存（險種明細等表格類資料辨識率較低，請特別確認）');
+  showSuccess('已將辨識到的欄位帶入下方表單，請仔細核對後再儲存（險種明細等表格類資料辨識率較低，請特別確認）');
 }
 
 function mergeOcrIntoEditing(parsed){
@@ -1467,10 +1537,13 @@ function ocrValueAfterLabel(lines, labels){
       let rest = lines[i].slice(idx + label.length).replace(/^[:：\s]+/, '').trim();
       rest = trimAtNextLabel(rest);
       if(rest) return rest;
-      // value likely on next non-empty line(s)
+      // value likely on next non-empty line(s) — but never grab a line that is itself
+      // another field's label (e.g. an empty value immediately followed by "分配方式/比例:")
       for(let j=i+1; j<Math.min(i+3, lines.length); j++){
-        if(lines[j] && !labels.some(l=>lines[j].includes(l))){
-          return trimAtNextLabel(lines[j].trim());
+        const candidate = trimAtNextLabel(lines[j].trim());
+        const bareCandidate = candidate.replace(/[:：]\s*$/, '');
+        if(candidate && !ALL_OCR_LABELS.includes(bareCandidate)){
+          return candidate;
         }
       }
     }
@@ -1559,7 +1632,8 @@ function parseOcrText(text){
         let name = '';
         for(let j=i+1;j<Math.min(i+3,lines.length);j++){
           const candidate = trimAtNextLabel(lines[j]);
-          const looksLikeName = candidate && /[\u4e00-\u9fa5]/.test(candidate) && !ALL_OCR_LABELS.includes(candidate);
+          const bareLabel = candidate.replace(/[:：]\s*$/, '');
+          const looksLikeName = candidate && /[\u4e00-\u9fa5]/.test(candidate) && !ALL_OCR_LABELS.includes(bareLabel) && !candidate.includes('順位');
           if(looksLikeName){ name = candidate; break; }
         }
         let rank = '';
@@ -1567,6 +1641,19 @@ function parseOcrText(text){
           if(lines[j].includes('順位')){ rank = trimAtNextLabel(lines[j]); break; }
         }
         if(name) beneficiaries.push({ id: uid(), name: name.replace(/[:：]/g,'').trim(), rank: rank || '' });
+      }
+    }
+    // Fallback: some pages export beneficiaries as one dense run of text with no "姓名" label at
+    // all, e.g. "陳俊銘第一順位(100%)一次給付------陳王玉霞第二順位(100%)一次給付------未提供…".
+    // Strip the known filler tokens, then pull out each "姓名第X順位(N%)" pair positionally.
+    if(beneficiaries.length === 0){
+      const compact = lines.join('')
+        .replace(/一次給付|分期給付|給付方式|未提供|銀行名稱|分行名稱|聯絡地址|帳號/g, '')
+        .replace(/-{2,}/g, '');
+      const re = /([\u4e00-\u9fa5]{2,12}?)第([一二三四五六七八九十百]+)順位\((\d{1,3})%\)/g;
+      let m;
+      while((m = re.exec(compact))){
+        beneficiaries.push({ id: uid(), name: m[1], rank: `第${m[2]}順位(${m[3]}%)` });
       }
     }
     if(beneficiaries.length) out.beneficiaries = beneficiaries;
@@ -1624,11 +1711,131 @@ function parseOcrText(text){
   return out;
 }
 
+/* ---------- app lock (PIN) — light deterrent for a lost/borrowed phone, not strong encryption ---------- */
+const PIN_KEY = 'insurance_app_pin_v1';
 
+async function hashPin(pin){
+  const data = new TextEncoder().encode('crm-salt-' + pin);
+  if(window.crypto && window.crypto.subtle){
+    try{
+      const buf = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }catch(e){ /* fall through to simple hash below */ }
+  }
+  // fallback for non-secure contexts where SubtleCrypto is unavailable
+  let h = 0;
+  const s = 'crm-salt-' + pin;
+  for(let i=0;i<s.length;i++){ h = ((h<<5)-h + s.charCodeAt(i))|0; }
+  return 'fallback-' + h;
+}
 
-loadData();
-switchTab('dashboard');
-renderList();
+async function checkLockOnLoad(){
+  const storedHash = localStorage.getItem(PIN_KEY);
+  if(!storedHash){ initApp(); return; }
+  document.getElementById('lock-overlay').style.display = 'flex';
+  setTimeout(()=> document.getElementById('lock-input').focus(), 100);
+}
+
+async function tryUnlock(){
+  const input = document.getElementById('lock-input');
+  const storedHash = localStorage.getItem(PIN_KEY);
+  const attemptHash = await hashPin(input.value);
+  if(attemptHash === storedHash){
+    document.getElementById('lock-overlay').style.display = 'none';
+    initApp();
+  } else {
+    document.getElementById('lock-error').textContent = '密碼錯誤，請再試一次';
+    input.value = '';
+    input.focus();
+  }
+}
+
+function openLockSettings(){
+  renderLockSettingsBody();
+  document.getElementById('lock-settings-overlay').style.display = 'flex';
+}
+function closeLockSettings(){
+  document.getElementById('lock-settings-overlay').style.display = 'none';
+}
+function renderLockSettingsBody(){
+  const hasPin = !!localStorage.getItem(PIN_KEY);
+  const body = document.getElementById('lock-settings-body');
+  if(!hasPin){
+    body.innerHTML = `
+      <p style="font-size:12px; color:#8B93A1; margin:0 0 10px;">設定密碼後，每次重新打開這個網頁都需要輸入密碼才能看到客戶資料。</p>
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>設定密碼</label>
+        <input id="pin-new" type="password" inputmode="numeric" class="lock-set-input" />
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>再輸入一次確認</label>
+        <input id="pin-confirm" type="password" inputmode="numeric" class="lock-set-input" />
+      </div>
+      <p id="pin-set-error" style="color:#B5502C; font-size:12px; margin:0 0 8px; min-height:14px;"></p>
+      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="submitSetPin()">啟用密碼鎖</button>
+    `;
+  } else {
+    body.innerHTML = `
+      <p style="font-size:12px; color:#8B93A1; margin:0 0 10px;">密碼鎖目前已啟用。</p>
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>目前密碼</label>
+        <input id="pin-current" type="password" inputmode="numeric" class="lock-set-input" />
+      </div>
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>新密碼（若只想移除，留空）</label>
+        <input id="pin-new2" type="password" inputmode="numeric" class="lock-set-input" />
+      </div>
+      <p id="pin-set-error" style="color:#B5502C; font-size:12px; margin:0 0 8px; min-height:14px;"></p>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-danger" style="flex:1; justify-content:center;" onclick="submitRemovePin()">移除密碼鎖</button>
+        <button class="btn btn-primary" style="flex:1; justify-content:center;" onclick="submitChangePin()">更新密碼</button>
+      </div>
+    `;
+  }
+  // shared input style since these fields aren't part of the main form-grid styling scope
+  document.querySelectorAll('.lock-set-input').forEach(el=>{
+    el.style.cssText = 'width:100%; border:1px solid #DDD7C9; border-radius:6px; padding:8px 10px; font-size:14px; letter-spacing:2px; background:#FBFAF6; outline:none;';
+  });
+}
+async function submitSetPin(){
+  const a = document.getElementById('pin-new').value;
+  const b = document.getElementById('pin-confirm').value;
+  const errEl = document.getElementById('pin-set-error');
+  if(!a || a.length < 4){ errEl.textContent = '密碼至少需要 4 碼'; return; }
+  if(a !== b){ errEl.textContent = '兩次輸入的密碼不一致'; return; }
+  localStorage.setItem(PIN_KEY, await hashPin(a));
+  closeLockSettings();
+  showSuccess('密碼鎖已啟用，下次打開網頁需要輸入密碼');
+}
+async function submitChangePin(){
+  const cur = document.getElementById('pin-current').value;
+  const next = document.getElementById('pin-new2').value;
+  const errEl = document.getElementById('pin-set-error');
+  const storedHash = localStorage.getItem(PIN_KEY);
+  if(await hashPin(cur) !== storedHash){ errEl.textContent = '目前密碼不正確'; return; }
+  if(!next){ errEl.textContent = '請輸入新密碼，或按下方「移除密碼鎖」'; return; }
+  if(next.length < 4){ errEl.textContent = '密碼至少需要 4 碼'; return; }
+  localStorage.setItem(PIN_KEY, await hashPin(next));
+  closeLockSettings();
+  showSuccess('密碼已更新');
+}
+async function submitRemovePin(){
+  const cur = document.getElementById('pin-current').value;
+  const errEl = document.getElementById('pin-set-error');
+  const storedHash = localStorage.getItem(PIN_KEY);
+  if(await hashPin(cur) !== storedHash){ errEl.textContent = '目前密碼不正確'; return; }
+  localStorage.removeItem(PIN_KEY);
+  closeLockSettings();
+  showSuccess('密碼鎖已移除');
+}
+
+function initApp(){
+  loadData();
+  switchTab('dashboard');
+  renderList();
+}
+
+checkLockOnLoad();
 </script>
 </body>
 </html>
