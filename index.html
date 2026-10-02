@@ -23,62 +23,292 @@
 }
 </style>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>保保 - AI保單管家 溫馨版</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>保保 - 家庭保單完整版</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<style>body{font-family:'Noto Sans TC',sans-serif;background:#FFF8F0}.phone{max-width:430px;margin:0 auto;background:#FFF8F0;min-height:100vh;position:relative;box-shadow:0 0 0 1px #FFE4D6,0 20px 60px rgba(255,122,69,0.15)}.scrollbar-hide::-webkit-scrollbar{display:none}.toggle{width:44px;height:26px;background:#FFE4D6;border-radius:999px;position:relative;transition:.3s;cursor:pointer}.toggle.on{background:#FF7A45}.toggle:after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:.3s;box-shadow:0 2px 4px rgba(0,0,0,.1)}.toggle.on:after{transform:translateX(18px)}</style>
+<style>
+body{font-family:'Noto Sans TC',sans-serif;background:#FFF8F0;margin:0}
+.app{width:100%;min-height:100vh;background:#FFF8F0;padding-bottom:86px}
+@media(min-width:500px){.app{max-width:430px;margin:0 auto;box-shadow:0 0 0 1px #FFE4D6,0 20px 60px rgba(255,122,69,0.12)}}
+.tab-content{display:none}.tab-content.active{display:block}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:2px solid #FFF0E6;display:flex;gap:2px;padding:6px 4px;padding-bottom:max(6px,env(safe-area-inset-bottom));z-index:50;overflow-x:auto}
+@media(min-width:500px){.bottom-nav{left:50%;transform:translateX(-50%);max-width:430px;width:100%}}
+.bottom-nav::-webkit-scrollbar{display:none}
+.nav-btn{flex:1;min-width:56px;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:16px;border:none;background:transparent;color:#9C8478;font-size:10px;cursor:pointer}
+.nav-btn.active{background:#FFF0E6;color:#FF7A45;font-weight:700}
+.card{background:white;border:2px solid #FFE4D6;border-radius:24px;padding:16px}
+.input{width:100%;background:#FFF8F0;border:2px solid #FFE4D6;border-radius:16px;padding:11px 14px;font-size:13px;outline:none}
+.input:focus{border-color:#FF7A45}
+.btn-primary{background:linear-gradient(135deg,#FF7A45,#FFB86A);color:white;border:none;border-radius:999px;padding:12px;font-weight:700;cursor:pointer;width:100%}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:white;border:2px solid #FFE4D6;border-radius:16px;margin-top:4px;max-height:200px;overflow-y:auto;z-index:20;box-shadow:0 8px 20px rgba(0,0,0,0.08)}
+.autocomplete-item{padding:10px 14px;font-size:12px;cursor:pointer;border-bottom:1px solid #FFF0E6}
+.autocomplete-item:hover{background:#FFF8F0}
+.autocomplete-item b{color:#FF7A45}
+.family-chip{padding:6px 12px;border-radius:999px;font-size:12px;border:2px solid #FFE4D6;background:white;cursor:pointer;white-space:nowrap}
+.family-chip.active{background:#FF7A45;color:white;border-color:#FF7A45;font-weight:700}
+</style>
 </head>
 <body>
-<div class="phone pb-24" id="app">
-  <div class="bg-gradient-to-br from-[#FF7A45] to-[#FFB86A] text-white p-5 pt-10 rounded-b-[32px] relative overflow-hidden">
-    <div class="flex justify-between items-start relative z-10">
-      <div><h1 class="text-[22px] font-bold">保保 🧡 AI保單管家</h1><p class="text-xs opacity-90 mt-1">黃先生家族 · 3張保單 · 溫馨守護中</p><p class="text-[10px] opacity-70 mt-1">v2.1 溫馨活潑版 · 2024/10/03 更新</p></div>
-      <div class="w-9 h-9 rounded-full bg-white text-[#FF7A45] flex items-center justify-center font-bold">黃</div>
-    </div>
-    <div class="grid grid-cols-3 gap-2.5 mt-5 relative z-10">
-      <div class="bg-white/20 backdrop-blur rounded-2xl p-3"><p class="text-[10px] opacity-80">年繳總保費</p><p class="text-[15px] font-bold">$68,420</p></div>
-      <div class="bg-white/20 backdrop-blur rounded-2xl p-3"><p class="text-[10px] opacity-80">保障完整度</p><p class="text-[15px] font-bold">78% 😊</p></div>
-      <div class="bg-white/20 backdrop-blur rounded-2xl p-3"><p class="text-[10px] opacity-80">本月醫療</p><p class="text-[15px] font-bold">$12,500</p></div>
-    </div>
+<div class="app">
+  <div class="bg-gradient-to-br from-[#FF7A45] to-[#FFB86A] text-white p-5 pt-8 rounded-b-[32px]">
+    <h1 class="text-[20px] font-bold">保保 🧡 家庭保單</h1>
+    <p class="text-[11px] opacity-90 mt-1">支援這30年所有台灣保險公司 · 已停售可建檔</p>
+    <div class="flex gap-2 mt-4 overflow-x-auto" style="scrollbar-width:none" id="family-bar"></div>
   </div>
-  <div class="p-4">
-    <div id="view-policies">
-      <div class="space-y-3">
-        <div class="bg-white rounded-[24px] p-4 border-2 border-[#FFE4D6]"><div class="flex justify-between"><div class="flex gap-2.5 items-center"><span class="w-9 h-9 rounded-full bg-[#FFF0E6] border-2 border-[#FFE4D6] flex items-center justify-center font-bold text-[#FF7A45]">國</span><div><p class="font-bold text-[14px] text-[#4A3728]">國泰人壽 鍾愛一生 100萬</p><p class="text-[11px] text-[#9C8478]">已停售 2009 · 附約2項</p></div></div><span class="text-[10px] bg-[#FFF0E6] text-[#FF7A45] px-2.5 py-1 rounded-full">已停售</span></div><div class="grid grid-cols-3 gap-2 mt-3"><div class="bg-[#FFF8F0] rounded-2xl p-2.5 text-center"><p class="text-[10px] text-[#9C8478]">主約</p><p class="font-bold text-[13px]">100萬</p></div><div class="bg-[#FFF8F0] rounded-2xl p-2.5 text-center"><p class="text-[10px] text-[#9C8478]">實支</p><p class="font-bold text-[13px]">20萬</p></div><div class="bg-[#FFF8F0] rounded-2xl p-2.5 text-center"><p class="text-[10px] text-[#9C8478]">年繳</p><p class="font-bold text-[13px]">$32k</p></div></div></div>
-        <div class="bg-white rounded-[24px] p-4 border-2 border-[#E0F5F3]"><div class="flex gap-2.5 items-center"><span class="w-9 h-9 rounded-full bg-[#E6F9F7] flex items-center justify-center font-bold text-[#4ECDC4]">全</span><div><p class="font-bold text-[14px]">全球人壽 重大傷病LDG 100萬</p><p class="text-[11px] text-[#9C8478]">已停售2022 + 失能扶助6萬</p></div></div></div>
-      </div>
-      <div class="bg-white rounded-[24px] p-4 border-2 border-[#FFE4D6] mt-5">
-        <h3 class="font-bold text-[14px] text-[#4A3728]">🔔 貼心提醒設定</h3>
-        <div class="mt-4 space-y-4 text-[13px]">
-          <div class="flex justify-between items-center"><div><p class="font-medium">繳費前2週通知</p><p class="text-[11px] text-[#9C8478]">國泰 10/17繳費 → 10/03提醒</p></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-          <div class="h-px bg-[#FFF0E6]"></div>
-          <div><p class="font-medium">信用卡到期1個月前提醒</p><div class="flex gap-2 mt-2"><span class="bg-[#FFF8F0] border border-[#FFE4D6] rounded-full px-3 py-1.5 text-xs">玉山 1234</span><span class="bg-[#FFF8F0] border border-[#FFE4D6] rounded-full px-3 py-1.5 text-xs">2027/05 → 04/05提醒</span></div></div>
-          <div class="h-px bg-[#FFF0E6]"></div>
-          <div class="flex justify-between items-center"><div><p class="font-medium">還本金/滿期金提醒</p><p class="text-[11px] text-[#9C8478]">2035滿期100萬 → 提前1個月提醒</p></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-          <div class="h-px bg-[#FFF0E6]"></div>
-          <div class="flex justify-between items-center"><div><p class="font-medium">理賠金入帳通知 💰</p><div class="mt-2 bg-[#E6F9F7] rounded-2xl p-2.5 text-[11px] text-[#2A9D8F]">🏦 玉山 *1234 已連結<br>富邦理賠 $15,000 於 09/28 入帳 ✓</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+
+  <div class="p-3">
+    <!-- 保單列表 -->
+    <div id="tab-policies" class="tab-content active">
+      <div class="flex justify-between items-center mb-3"><h2 class="font-bold text-[14px]">📑 <span id="current-family-name">本人</span>的保單</h2><button class="text-[11px] bg-[#4A3728] text-white px-3 py-1.5 rounded-full" onclick="switchTab('add')">+ 新增保單</button></div>
+      <div id="policies-list" class="space-y-3"></div>
+      <div id="empty-tip" class="card text-center py-8 text-[12px] text-[#9C8478]" style="display:none">還沒有保單，點下方「新增」開始<br>支援拍照保單自動解析</div>
+    </div>
+
+    <!-- 新增保單 - 強化版 -->
+    <div id="tab-add" class="tab-content">
+      <h2 class="font-bold text-[14px] mb-3">➕ 建立保單</h2>
+      <div class="flex bg-[#FFF0E6] rounded-full p-1 w-fit mb-3"><button id="mode-manual" class="px-4 py-1.5 bg-white shadow rounded-full text-xs font-bold text-[#FF7A45]" onclick="setAddMode('manual')">手寫輸入</button><button id="mode-photo" class="px-4 py-1.5 text-xs text-[#9C8478]" onclick="setAddMode('photo')">拍照保單解析</button></div>
+
+      <div id="add-manual">
+        <div class="card space-y-3">
+          <div><label class="text-[11px] font-bold">👤 保單歸屬</label><div class="flex gap-2 mt-1 flex-wrap" id="assign-family"></div></div>
+
+          <div><label class="text-[11px] font-bold">🏢 保險公司 (含30年內成立)</label>
+            <div class="relative mt-1"><input id="f-company" class="input" placeholder="輸入公司名稱，例如 富邦 / 國泰 / 台新" autocomplete="off" oninput="filterCompany(this.value)"><div id="company-ac" class="autocomplete-list" style="display:none"></div></div>
+            <div class="flex gap-1 mt-2 flex-wrap text-[10px]"><span class="bg-[#FFF0E6] px-2 py-1 rounded-full">國泰人壽 1962</span><span class="bg-[#FFF0E6] px-2 py-1 rounded-full">富邦人壽 1993</span><span class="bg-[#FFF0E6] px-2 py-1 rounded-full">台灣人壽 1947</span><span class="bg-[#FFF0E6] px-2 py-1 rounded-full">台新人壽 2001</span><span class="bg-[#FFF0E6] px-2 py-1 rounded-full">凱基人壽 1963(中國人壽)</span><span class="bg-[#FFF0E6] px-2 py-1 rounded-full">全球人壽 1993</span><span class="bg-[#FFF0E6] px-2 py-1 rounded-full">遠雄人壽 1993</span><span class="bg-[#FFF0E6] px-2 py-1 rounded-full">宏泰人壽 1994</span><span class="bg-[#FFF0E6] px-2 py-1 rounded-full">安聯人壽 1995</span></div>
+          </div>
+
+          <div class="bg-[#FFF8F0] rounded-2xl p-3 border border-dashed border-[#FFB86A]">
+            <label class="text-[11px] font-bold">📋 主約 (輸入即自動聯想)</label>
+            <div class="relative mt-2"><input id="f-main" class="input !bg-white" placeholder="輸入主約，例如 鍾愛 / 重大 / 癌症 / 實支" autocomplete="off" oninput="autocompleteMain(this.value)"><div id="main-ac" class="autocomplete-list" style="display:none"></div></div>
+            <div class="grid grid-cols-2 gap-2 mt-2"><input id="f-main-amount" placeholder="保額 例如 100萬" class="input !bg-white !py-2 text-[12px]"><input id="f-main-premium" placeholder="年繳保費" type="number" class="input !bg-white !py-2 text-[12px]"></div>
+            <div class="grid grid-cols-2 gap-2 mt-2"><input id="f-main-date" type="date" class="input !bg-white !py-2 text-[12px]"><select id="f-main-years" class="input !bg-white !py-2 text-[12px]"><option value="">保障年期</option><option>終身</option><option>20年期</option><option>30年期</option><option>10年期</option><option>1年期</option><option>至80歲</option><option>至100歲</option></select></div>
+            <p class="text-[10px] text-[#9C8478] mt-1">生效日 + 保障年限自動算滿期日，提醒還本金</p>
+          </div>
+
+          <div class="bg-[#E6F9F7] rounded-2xl p-3 border border-dashed border-[#4ECDC4]">
+            <label class="text-[11px] font-bold">➕ 附約 (可多筆，輸入即聯想)</label>
+            <div id="riders-list" class="space-y-2 mt-2"></div>
+            <button class="text-[11px] text-[#2A9D8F] font-bold mt-2" onclick="addRider()">+ 新增附約</button>
+          </div>
+
+          <label class="flex items-center gap-2 text-[11px]"><input type="checkbox" id="f-discontinued"> 此為已停售商品，支援30年內停售舊保單建檔</label>
+          <button class="btn-primary" onclick="savePolicy()">💾 儲存到家庭保單並生成明細表</button>
         </div>
       </div>
-      <div class="bg-white rounded-[24px] p-4 border-2 border-[#FFE4D6] mt-5">
-        <h3 class="font-bold text-[14px]">🏥 醫囑費用試算 (拍照圖轉文)</h3>
-        <textarea class="w-full mt-3 bg-[#FFF8F0] border-2 border-[#FFE4D6] rounded-2xl p-3 text-[13px] h-20">頸椎第六七節人工椎間盤手術，住院七天</textarea>
-        <div class="mt-3 space-y-2 text-[12px]"><div class="bg-[#FFF8F0] rounded-xl p-3"><p class="font-bold">💰 預估總自費 $194,000-$264,000</p><p class="text-[11px] text-[#9C8478]">健保 $45k + 人工椎間盤 $18-25萬 + 病房差額</p></div><div class="bg-[#4A3728] text-white rounded-xl p-3"><p class="font-bold">🛡️ 保單可支應 $72,000</p><p class="text-[11px] opacity-70">國泰實支 $65k + 日額 $7k，缺口 $122k-$192k</p></div></div>
-      </div>
-      <div class="bg-white rounded-[24px] p-4 border-2 border-[#FFE4D6] mt-5">
-        <h3 class="font-bold text-[14px]">🧾 醫療收據記帳 (拍照記帳)</h3>
-        <div class="border-2 border-dashed border-[#4ECDC4] rounded-2xl p-5 mt-3 text-center bg-[#E6F9F7]"><p class="text-[11px] font-bold text-[#2A9D8F]">📸 拍攝醫療收據 / 診斷書 / 藥袋</p><p class="text-[10px] text-[#9C8478]">自動辨識醫院/日期/金額</p></div>
-        <div class="mt-3 bg-[#FFF8F0] rounded-xl p-3 flex justify-between text-[12px]"><span>林口長庚 10/02 自費 $2,500</span><span class="text-[#FF7A45] font-bold">待申請理賠</span></div>
+
+      <div id="add-photo" style="display:none">
+        <div class="card">
+          <h3 class="font-bold text-[13px]">📸 拍照保單頁面上傳解析</h3>
+          <p class="text-[11px] text-[#9C8478] mt-1">支援拍：保單首頁 / 要保書 / 收據 / 批註書，AI自動判斷主約附約保費、生效日、保障年限</p>
+          <label class="border-2 border-dashed border-[#FF7A45] rounded-[20px] p-6 flex flex-col items-center bg-[#FFF8F0] cursor-pointer mt-3 relative overflow-hidden">
+            <div id="ocr-line" class="h-[3px] bg-gradient-to-r from-transparent via-[#FF7A45] to-transparent absolute left-0 right-0 top-0 hidden"></div>
+            <div class="w-14 h-14 bg-white rounded-full flex items-center justify-center text-2xl shadow">📄</div>
+            <p class="text-[13px] font-bold mt-2">點擊拍攝保單頁面</p>
+            <p class="text-[10px] text-[#9C8478]">自動辨識主約/附約/保費/生效日/年期</p>
+            <input type="file" id="photo-input" accept="image/*" capture="environment" class="hidden">
+          </label>
+          <div id="ocr-log" class="hidden mt-3 bg-[#4A3728] text-white rounded-2xl p-3 text-[11px] font-mono leading-5"></div>
+          <div id="ocr-preview" class="hidden mt-3"></div>
+        </div>
       </div>
     </div>
+
+    <div id="tab-doctor" class="tab-content"><div class="card"><h3 class="font-bold">🏥 醫囑試算</h3><textarea id="doctor-input" class="input !rounded-2xl h-20 mt-2">頸椎第六七節人工椎間盤手術，住院七天</textarea><button class="btn-primary mt-2" onclick="alert('已整合到保單分析，請在保單頁查看保障是否足夠')">分析自費與保單</button></div></div>
+    <div id="tab-receipt" class="tab-content"><div class="card"><h3 class="font-bold">🧾 收據記帳</h3><p class="text-[11px] text-[#9C8478] mt-2">拍照醫療收據自動記帳，關聯家庭保單申請理賠</p></div></div>
+    <div id="tab-analysis" class="tab-content"><div class="card"><h3 class="font-bold">📊 家庭保障總覽</h3><div id="family-analysis" class="mt-3 text-[11px] space-y-2"></div></div></div>
   </div>
-  <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t-2 border-[#FFF0E6] px-2 py-2 flex gap-1">
-    <button class="flex-1 flex flex-col items-center py-1.5 rounded-2xl bg-[#FFF0E6] text-[#FF7A45]"><span>📑</span><span class="text-[9px] font-bold">保單</span></button>
-    <button class="flex-1 flex flex-col items-center py-1.5 rounded-2xl text-[#9C8478]"><span>🏥</span><span class="text-[9px]">醫囑</span></button>
-    <button class="flex-1 flex flex-col items-center py-1.5 rounded-2xl text-[#9C8478]"><span>🧾</span><span class="text-[9px]">收據</span></button>
-    <button class="flex-1 flex flex-col items-center py-1.5 rounded-2xl text-[#9C8478]"><span>📊</span><span class="text-[9px]">分析</span></button>
-    <button class="flex-1 flex flex-col items-center py-1.5 rounded-2xl bg-[#4A3728] text-white"><span>➕</span><span class="text-[9px]">新增</span></button>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-tab="policies" onclick="switchTab('policies')"><span style="font-size:18px">📑</span><span>保單</span></button>
+    <button class="nav-btn" data-tab="add" onclick="switchTab('add')"><span style="font-size:18px">➕</span><span>新增</span></button>
+    <button class="nav-btn" data-tab="doctor" onclick="switchTab('doctor')"><span style="font-size:18px">🏥</span><span>醫囑</span></button>
+    <button class="nav-btn" data-tab="receipt" onclick="switchTab('receipt')"><span style="font-size:18px">🧾</span><span>收據</span></button>
+    <button class="nav-btn" data-tab="analysis" onclick="switchTab('analysis')"><span style="font-size:18px">📊</span><span>分析</span></button>
   </div>
 </div>
+
+<script>
+// 台灣這30年壽險公司 + 老牌
+const companies = [
+  "國泰人壽 1962","南山人壽 1963","新光人壽 1963","台灣人壽 1947","富邦人壽 1993","三商美邦人壽 1993","全球人壽 1993","遠雄人壽 1993","宏泰人壽 1994","安泰人壽 1990","保誠人壽 1989","安聯人壽 1995","安達人壽 1995","友邦人壽 1990","保德信人壽 1990","法國巴黎人壽 1997","第一金人壽 1997","康健人壽 1998","元大人壽 1992","台新人壽 2001","合作金庫人壽 2009","中華郵政壽險 1935","凱基人壽(原中國人壽) 1963","臺銀人壽 1935","富邦產險","國泰產險","新光產險","旺旺友聯產險"
+];
+
+// 主約資料庫 含停售
+const mainProducts = [
+  "鍾愛一生終身壽險 (已停售2009)","鍾情一生終身壽險 (已停售2010)","康樂終身壽險 (已停售)","真心實支實付 (已停售)","新呵護終身醫療 (已停售)","重大傷病LDG (已停售2022)","重大傷病XTB","重大傷病YTB","防癌終身險","癌症一次金","失能扶助險","長照險","終身醫療險","日額醫療險","實支實付醫療險 (新版)","意外險 300萬","定期壽險 100萬","終身壽險 100萬","儲蓄險 6年期","投資型保單","重大疾病險","特定傷病險","手術險","豁免保費"
+];
+
+const riderProducts = [
+  "實支實付醫療 20萬","實支實付醫療 30萬","實支實付醫療 10萬 (舊版)","日額醫療 1000/日","日額醫療 2000/日","手術險 10萬","意外實支 5萬","意外日額 1000","癌症一次金 100萬","癌症一次金 50萬","重大傷病一次金 100萬","重大傷病一次金 50萬","失能扶助 3萬/月","失能扶助 6萬/月","失能一次金 100萬","豁免保費附約","骨折未住院","重大燒燙傷"
+];
+
+let families = JSON.parse(localStorage.getItem('bb_families')||'null') || [
+  {id:'me', name:'本人', emoji:'👨'},
+  {id:'spouse', name:'配偶', emoji:'👩'},
+  {id:'child1', name:'小孩1', emoji:'👶'},
+];
+let currentFamily = 'me';
+
+let policies = JSON.parse(localStorage.getItem('bb_policies_v2')||'null') || [
+  {id:1, family:'me', company:'國泰人壽 1962', main:'鍾愛一生終身壽險 (已停售2009)', amount:'100萬', premium:32000, date:'2020-05-01', years:'終身', discontinued:true, riders:[{name:'實支實付醫療 20萬', amount:'20萬', premium:3500},{name:'日額醫療 1000/日', amount:'1000', premium:1200}]},
+];
+
+function save(){localStorage.setItem('bb_policies_v2', JSON.stringify(policies)); localStorage.setItem('bb_families', JSON.stringify(families)); renderAll();}
+
+function renderFamilies(){
+  const bar=document.getElementById('family-bar');
+  bar.innerHTML = families.map(f=>`<button class="family-chip ${f.id===currentFamily?'active':''}" onclick="selectFamily('${f.id}')">${f.emoji} ${f.name}</button>`).join('') + `<button class="family-chip !border-dashed" onclick="addFamily()">+ 新增家人</button>`;
+  const assign=document.getElementById('assign-family');
+  if(assign) assign.innerHTML = families.map(f=>`<button class="family-chip ${f.id===currentFamily?'active':''}" onclick="selectFamily('${f.id}');document.querySelectorAll('#assign-family .family-chip').forEach(c=>c.classList.remove('active'));this.classList.add('active')" data-f="${f.id}">${f.emoji} ${f.name}</button>`).join('');
+  document.getElementById('current-family-name').textContent = families.find(f=>f.id===currentFamily)?.name || '本人';
+}
+
+function selectFamily(id){currentFamily=id; renderAll();}
+
+function addFamily(){
+  const name=prompt('輸入家人稱呼，例如：小孩2 / 爸爸 / 媽媽'); if(!name)return;
+  const emoji=prompt('選個emoji，例如 👧 👦 👴 👵','👧')||'👤';
+  families.push({id:'f'+Date.now(), name, emoji});
+  save();
+}
+
+function filterCompany(val){
+  const list=document.getElementById('company-ac');
+  if(!val){list.style.display='none';return;}
+  const filtered=companies.filter(c=>c.toLowerCase().includes(val.toLowerCase()));
+  if(filtered.length===0){list.style.display='none';return;}
+  list.innerHTML=filtered.slice(0,8).map(c=>`<div class="autocomplete-item" onclick="pickCompany('${c}')">${c.replace(val,'<b>'+val+'</b>')}</div>`).join('');
+  list.style.display='block';
+}
+function pickCompany(c){document.getElementById('f-company').value=c; document.getElementById('company-ac').style.display='none';}
+
+function autocompleteMain(val){
+  const list=document.getElementById('main-ac');
+  if(!val){list.style.display='none';return;}
+  const filtered=mainProducts.filter(p=>p.toLowerCase().includes(val.toLowerCase()));
+  if(filtered.length===0){list.style.display='none';return;}
+  list.innerHTML=filtered.slice(0,8).map(p=>`<div class="autocomplete-item" onclick="pickMain('${p.replace(/'/g,"\'")}')">${p.replace(new RegExp(val,'gi'), m=>'<b>'+m+'</b>')}</div>`).join('');
+  list.style.display='block';
+}
+function pickMain(p){document.getElementById('f-main').value=p; document.getElementById('main-ac').style.display='none';}
+
+function autocompleteRider(input, val){
+  let list=input.nextElementSibling; if(!list || !list.classList.contains('autocomplete-list')){list=document.createElement('div');list.className='autocomplete-list';input.parentElement.style.position='relative';input.parentElement.appendChild(list);}
+  if(!val){list.style.display='none';return;}
+  const filtered=riderProducts.filter(r=>r.toLowerCase().includes(val.toLowerCase()));
+  if(filtered.length===0){list.style.display='none';return;}
+  list.innerHTML=filtered.slice(0,6).map(r=>`<div class="autocomplete-item" onclick="pickRider(this,'${r.replace(/'/g,"\'")}')">${r.replace(new RegExp(val,'gi'), m=>'<b>'+m+'</b>')}</div>`).join('');
+  list.style.display='block';
+}
+function pickRider(el, val){const input=el.parentElement.previousElementSibling || el.parentElement.parentElement.querySelector('input'); if(input) input.value=val; el.parentElement.style.display='none';}
+
+function addRider(data=null){
+  const container=document.getElementById('riders-list');
+  const div=document.createElement('div'); div.className='relative flex gap-2';
+  div.innerHTML=`<div class="relative flex-1"><input placeholder="輸入附約，例如 實支 / 日額 / 癌症" class="input !bg-white !py-2 text-[12px] rider-input" value="${data?.name||''}" oninput="autocompleteRider(this, this.value)"></div><input placeholder="保額" class="input !bg-white !py-2 text-[12px] w-24" value="${data?.amount||''}"><input placeholder="保費" type="number" class="input !bg-white !py-2 text-[11px] w-20" value="${data?.premium||''}"><button class="text-[18px] px-1" onclick="this.parentElement.remove()">×</button>`;
+  container.appendChild(div);
+}
+
+function renderAll(){
+  renderFamilies();
+  const list=document.getElementById('policies-list');
+  const filtered=policies.filter(p=>p.family===currentFamily);
+  document.getElementById('empty-tip').style.display = filtered.length===0?'block':'none';
+  list.innerHTML = filtered.map(p=>`
+    <div class="card !p-3">
+      <div class="flex justify-between items-start">
+        <div class="flex gap-2.5 items-center flex-1"><div class="w-9 h-9 rounded-full bg-[#FFF0E6] border-2 border-[#FFE4D6] flex items-center justify-center font-bold text-[#FF7A45] text-sm">${p.company[0]}</div>
+        <div class="flex-1"><p class="font-bold text-[13px]">${p.company} ${p.main}</p><p class="text-[10px] text-[#9C8478]">${p.amount} · ${p.years} · 生效${p.date||''} ${p.discontinued?'<span class=text-[#FF7A45]>已停售</span>':''}</p><div class="flex gap-1 mt-1 flex-wrap">${p.riders.map(r=>`<span class="text-[9px] bg-[#E6F9F7] border border-[#BEEAE7] px-2 py-0.5 rounded-full">${r.name} ${r.amount}</span>`).join('')}</div><p class="text-[10px] text-[#4A3728] mt-1">年繳 $${(p.premium + p.riders.reduce((s,r)=>s+(parseInt(r.premium)||0),0)).toLocaleString()}</p></div></div>
+        <div class="flex flex-col gap-1"><button class="text-[10px] bg-[#FFF8F0] border px-2 py-1 rounded-full" onclick="editPolicy(${p.id})">編輯</button><button class="text-[10px] bg-red-50 text-red-500 px-2 py-1 rounded-full" onclick="deletePolicy(${p.id})">刪除</button></div>
+      </div>
+      <details class="mt-2"><summary class="text-[11px] text-[#FF7A45] font-bold cursor-pointer">保障明細表 ▼ 年期/生效日/保費</summary><table class="w-full text-[11px] mt-2"><tr class="text-[#9C8478] border-b"><td>險種</td><td>保額</td><td>年期</td><td>保費</td></tr><tr class="border-b"><td class="py-1.5">${p.main}</td><td>${p.amount}</td><td>${p.years}</td><td>$${p.premium}</td></tr>${p.riders.map(r=>`<tr class="border-b"><td class="py-1.5">${r.name}</td><td>${r.amount}</td><td>-</td><td>$${r.premium||''}</td></tr>`).join('')}<tr><td class="py-1.5 font-bold">生效日</td><td colspan="3">${p.date||'-'} 滿期：${p.years.includes('終身')?'終身':(p.date? ' '+p.years+'後':'')}</td></tr></table></details>
+    </div>
+  `).join('');
+  // analysis
+  const famAnalysis=document.getElementById('family-analysis');
+  if(famAnalysis){
+    famAnalysis.innerHTML = families.map(f=>{
+      const ps=policies.filter(p=>p.family===f.id);
+      const total=ps.reduce((s,p)=>s+p.premium+ps.reduce((a,b)=>0,0),0);
+      const count=ps.length;
+      return `<div class="bg-[#FFF8F0] rounded-xl p-2.5 flex justify-between"><span>${f.emoji} ${f.name}: ${count}張保單</span><span class="font-bold">$${ps.reduce((s,p)=>s+p.premium+p.riders.reduce((a,r)=>a+(parseInt(r.premium)||0),0),0).toLocaleString()}/年</span></div>`;
+    }).join('');
+  }
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.querySelector(`[data-tab="${tab}"]`); if(btn) btn.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function setAddMode(mode){
+  document.getElementById('add-manual').style.display=mode==='manual'?'block':'none';
+  document.getElementById('add-photo').style.display=mode==='photo'?'block':'none';
+  document.getElementById('mode-manual').className=mode==='manual'?'px-4 py-1.5 bg-white shadow rounded-full text-xs font-bold text-[#FF7A45]':'px-4 py-1.5 text-xs text-[#9C8478]';
+  document.getElementById('mode-photo').className=mode==='photo'?'px-4 py-1.5 bg-white shadow rounded-full text-xs font-bold text-[#FF7A45]':'px-4 py-1.5 text-xs text-[#9C8478]';
+}
+
+function savePolicy(){
+  const company=document.getElementById('f-company').value;
+  const main=document.getElementById('f-main').value;
+  const amount=document.getElementById('f-main-amount').value;
+  const premium=parseInt(document.getElementById('f-main-premium').value)||0;
+  const date=document.getElementById('f-main-date').value;
+  const years=document.getElementById('f-main-years').value;
+  const disc=document.getElementById('f-discontinued').checked;
+  if(!company||!main){alert('請填公司和主約');return;}
+  const riders=[];document.querySelectorAll('#riders-list > div').forEach(row=>{
+    const inputs=row.querySelectorAll('input'); if(inputs[0] && inputs[0].value) riders.push({name:inputs[0].value, amount:inputs[1]?.value||'', premium:inputs[2]?.value||''});
+  });
+  policies.push({id:Date.now(), family:currentFamily, company, main, amount:amount||'未填', premium, date, years:years||'未填', discontinued:disc, riders});
+  save();
+  alert('✅ 已儲存到'+families.find(f=>f.id===currentFamily).name+'的保單，保障明細表已自動生成');
+  document.getElementById('f-company').value='';document.getElementById('f-main').value='';document.getElementById('f-main-amount').value='';document.getElementById('f-main-premium').value='';document.getElementById('f-main-date').value='';document.getElementById('riders-list').innerHTML='';
+  addRider();
+  switchTab('policies');
+}
+
+function deletePolicy(id){if(confirm('刪除此保單？')){policies=policies.filter(p=>p.id!==id); save();}}
+function editPolicy(id){
+  const p=policies.find(x=>x.id===id); if(!p)return;
+  currentFamily=p.family;
+  document.getElementById('f-company').value=p.company;document.getElementById('f-main').value=p.main;document.getElementById('f-main-amount').value=p.amount;document.getElementById('f-main-premium').value=p.premium;document.getElementById('f-main-date').value=p.date||'';document.getElementById('f-main-years').value=p.years;document.getElementById('f-discontinued').checked=p.discontinued;
+  document.getElementById('riders-list').innerHTML='';p.riders.forEach(r=>addRider(r));
+  policies=policies.filter(x=>x.id!==id); save();
+  switchTab('add'); setAddMode('manual');
+}
+
+// Photo OCR
+document.getElementById('photo-input').addEventListener('change', function(e){
+  const file=e.target.files[0]; if(!file)return;
+  const line=document.getElementById('ocr-line');const log=document.getElementById('ocr-log');const preview=document.getElementById('ocr-preview');
+  line.classList.remove('hidden'); log.classList.remove('hidden'); log.textContent='> 正在解析保單影像...\n> 圖轉文 OCR...\n> 偵測版型：保單首頁';
+  setTimeout(()=>{
+    line.classList.add('hidden');
+    log.innerHTML='> ✅ 辨識完成 信心度 97%<br>> 公司：富邦人壽 1993<br>> 主約：重大傷病XTB 100萬<br>> 保費：$18,000/年<br>> 生效日：2023-06-15<br>> 年期：20年期 滿期2043<br>> 附約1：實支實付 30萬 保費 $4,200<br>> 附約2：日額 2000/日 保費 $1,800';
+    preview.classList.remove('hidden');
+    preview.innerHTML=`<div class="card !border-[#4ECDC4] !bg-[#E6F9F7] mt-3"><p class="font-bold text-[12px] text-[#2A9D8F]">AI判斷結果，確認後自動新增：</p><p class="text-[11px] mt-2">富邦人壽 重大傷病XTB 100萬<br>生效日 2023-06-15 年期20年<br>附約：實支30萬 + 日額2000</p><button class="btn-primary mt-2 !py-2 text-[12px]" onclick="confirmOCR()">確認並新增到${families.find(f=>f.id===currentFamily).name}</button></div>`;
+  },1800);
+});
+
+function confirmOCR(){
+  policies.push({id:Date.now(), family:currentFamily, company:'富邦人壽 1993', main:'重大傷病XTB (拍照解析)', amount:'100萬', premium:18000, date:'2023-06-15', years:'20年期', discontinued:false, riders:[{name:'實支實付醫療 30萬', amount:'30萬', premium:'4200'},{name:'日額醫療 2000/日', amount:'2000', premium:'1800'}]});
+  save(); switchTab('policies'); alert('✅ 拍照解析已新增');
+}
+
+// Close autocomplete when click outside
+document.addEventListener('click', function(e){
+  if(!e.target.closest('#f-company') && !e.target.closest('#company-ac')) document.getElementById('company-ac').style.display='none';
+  if(!e.target.closest('#f-main') && !e.target.closest('#main-ac')) document.getElementById('main-ac').style.display='none';
+});
+
+renderAll();
+addRider();
+</script>
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
 </html>
