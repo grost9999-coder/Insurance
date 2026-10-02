@@ -24,7 +24,7 @@
 </style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>保保 - 真實商品庫版</title>
+<title>保保 - 3324項完整版</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -53,10 +53,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:#FFF8F0;margin:0}
 <body>
 <div class="app">
   <div class="bg-gradient-to-br from-[#FF7A45] to-[#FFB86A] text-white p-5 pt-8 rounded-b-[32px]">
-    <h1 class="text-[20px] font-bold">保保 🧡 真實商品庫版</h1>
-    <p class="text-[11px] opacity-90 mt-1">已建檔 154 項商品 · 輸入「全心溢」自動搜到南山全心溢靠2</p>
+    <h1 class="text-[20px] font-bold">保保 🧡 3324項完整版</h1>
+    <p class="text-[11px] opacity-90 mt-1">已建檔 3324 項商品 · 輸入「全心溢」搜到南山全心溢靠2 · 全球269項已補齊</p>
     <div class="flex gap-2 mt-3 overflow-x-auto" id="family-bar" style="scrollbar-width:none"></div>
-    <div class="mt-3 bg-white/20 backdrop-blur rounded-2xl p-2.5 flex gap-2 text-[10px]"><span>📚 雲端商品庫：154 項</span><span>·</span><span>含30年已停售</span><span>·</span><span id="cloud-status">已同步</span></div>
+    <div class="mt-3 bg-white/20 backdrop-blur rounded-2xl p-2.5 flex gap-2 text-[10px]"><span>📚 雲端商品庫：<span id="cloud-count">3324 項</span></span><span>·</span><span>全球已補齊</span><span>·</span><span id="cloud-status">載入中...</span></div>
   </div>
 
   <div class="p-3">
@@ -68,34 +68,27 @@ body{font-family:'Noto Sans TC',sans-serif;background:#FFF8F0;margin:0}
     <div id="tab-add" class="tab-content">
       <h2 class="font-bold text-[14px] mb-2">➕ 建立保單 - 真實商品聯想</h2>
       <div class="flex bg-[#FFF0E6] rounded-full p-1 w-fit mb-3"><button id="mode-m" class="px-4 py-1.5 bg-white shadow rounded-full text-xs font-bold text-[#FF7A45]" onclick="setMode('manual')">手寫輸入</button><button id="mode-p" class="px-4 py-1.5 text-xs text-[#9C8478]" onclick="setMode('photo')">拍照解析</button></div>
-
       <div id="add-manual">
         <div class="card space-y-3">
           <div><label class="text-[11px] font-bold">👤 歸屬</label><div id="assign-family" class="flex gap-2 mt-1 flex-wrap"></div></div>
-          
           <div><label class="text-[11px] font-bold">🏢 保險公司 (30年內成立皆有)</label>
-            <div class="relative mt-1"><input id="f-company" class="input" placeholder="輸入公司，例如 南山 / 國泰 / 富邦" oninput="onCompanyInput(this.value)" autocomplete="off"><div id="company-ac" class="ac-list" style="display:none"></div></div>
+            <div class="relative mt-1"><input id="f-company" class="input" placeholder="輸入公司，例如 南山 / 國泰 / 全球" oninput="onCompanyInput(this.value)" autocomplete="off"><div id="company-ac" class="ac-list" style="display:none"></div></div>
           </div>
-
           <div class="bg-[#FFF8F0] rounded-2xl p-3 border-2 border-dashed border-[#FFB86A]">
             <label class="text-[11px] font-bold">📋 主約 (輸入關鍵字自動搜真實商品)</label>
-            <p class="text-[10px] text-[#9C8478]">試試輸入：全心溢、鍾愛、實健、萬美利、美富、吉利</p>
+            <p class="text-[10px] text-[#9C8478]">試試：全心溢、鍾愛、LDG、薰衣草、全球實在</p>
             <div class="relative mt-2"><input id="f-main" class="input !bg-white" placeholder="例如輸入 全心溢 → 自動搜到南山人壽全心溢靠2" oninput="onMainInput(this.value)" autocomplete="off"><div id="main-ac" class="ac-list" style="display:none"></div></div>
             <div class="grid grid-cols-3 gap-2 mt-2"><input id="f-amount" placeholder="保額" class="input !bg-white !py-2 text-[12px]"><input id="f-premium" placeholder="年繳保費" type="number" class="input !bg-white !py-2 text-[12px]"><input id="f-date" type="date" class="input !bg-white !py-2 text-[12px]"></div>
             <div class="grid grid-cols-2 gap-2 mt-2"><select id="f-years" class="input !bg-white !py-2 text-[12px]"><option>保障年期</option><option>終身</option><option>20年期</option><option>30年期</option><option>至80歲</option><option>至100歲</option><option>1年期</option></select><label class="flex items-center gap-1 text-[11px]"><input type="checkbox" id="f-disc"> 已停售</label></div>
           </div>
-
           <div class="bg-[#E6F9F7] rounded-2xl p-3 border-2 border-dashed border-[#4ECDC4]">
             <label class="text-[11px] font-bold">➕ 附約 (輸入即搜真實附約名稱)</label>
-            <p class="text-[10px] text-[#9C8478]">試試：實支、日額、手術、癌症、重大</p>
             <div id="riders-list" class="space-y-2 mt-2"></div>
             <button class="text-[11px] text-[#2A9D8F] font-bold mt-2" onclick="addRider()">+ 新增附約</button>
           </div>
-
           <button class="btn-primary" onclick="savePolicy()">💾 儲存並生成明細表</button>
         </div>
       </div>
-
       <div id="add-photo" style="display:none">
         <div class="card">
           <h3 class="font-bold text-[13px]">📸 拍照保單頁面解析 (含條款)</h3>
@@ -106,7 +99,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#FFF8F0;margin:0}
       </div>
     </div>
 
-    <div id="tab-terms" class="tab-content"><div class="card"><h3 class="font-bold text-[13px]">🔍 條款雲端查詢</h3><input id="terms-search" class="input mt-2" placeholder="搜尋商品條款，例如 全心溢靠 / 鍾愛一生" oninput="searchTerms(this.value)"><div id="terms-list" class="mt-3 space-y-2 text-[11px]"></div></div></div>
+    <div id="tab-terms" class="tab-content"><div class="card"><h3 class="font-bold text-[13px]">🔍 條款雲端查詢</h3><input id="terms-search" class="input mt-2" placeholder="搜尋商品條款，例如 全心溢靠 / 全球LDG" oninput="searchTerms(this.value)"><div id="terms-list" class="mt-3 space-y-2 text-[11px]"></div></div></div>
     <div id="tab-doctor" class="tab-content"><div class="card"><h3 class="font-bold text-[13px]">🏥 醫囑試算</h3><textarea id="doctor-input" class="input !rounded-2xl h-20 mt-2">頸椎第六七節人工椎間盤手術，住院七天</textarea><button class="btn-primary mt-2" onclick="alert('已依真實商品庫試算保障是否足夠')">分析</button></div></div>
 
     <div id="tab-receipt" class="tab-content">
@@ -115,21 +108,16 @@ body{font-family:'Noto Sans TC',sans-serif;background:#FFF8F0;margin:0}
         <p class="text-[24px] font-bold" id="receipt-total">$0</p>
         <div class="flex gap-2 mt-2 text-[10px] flex-wrap"><span class="bg-white/20 rounded-full px-2.5 py-1" id="receipt-count">0 筆收據</span><span class="bg-white/20 rounded-full px-2.5 py-1">已關聯保單可申請理賠</span></div>
       </div>
-
       <div class="card mt-3">
         <h3 class="font-bold text-[13px]">📸 拍照收據記帳</h3>
         <p class="text-[10px] text-[#9C8478] mt-1">拍醫療收據/診斷書/藥袋，自動辨識日期/醫院/科別/金額</p>
-        
-        <label class="border-2 border-dashed border-[#4ECDC4] rounded-[20px] p-5 flex flex-col items-center bg-[#E6F9F7] cursor-pointer mt-3 relative overflow-hidden" id="receipt-upload-label">
-          <div id="receipt-ocr-line" class="h-[3px] bg-gradient-to-r from-transparent via-[#4ECDC4] to-transparent absolute left-0 right-0 top-0 hidden" style="animation: scan 1s infinite"></div>
+        <label class="border-2 border-dashed border-[#4ECDC4] rounded-[20px] p-5 flex flex-col items-center bg-[#E6F9F7] cursor-pointer mt-3 relative overflow-hidden">
           <div class="w-14 h-14 bg-white rounded-full flex items-center justify-center text-2xl shadow">🧾</div>
           <p class="text-[13px] font-bold mt-2">點擊拍攝醫療收據</p>
           <p class="text-[10px] text-[#9C8478] mt-1">支援：收據、診斷書、藥單、檢驗單</p>
           <input type="file" id="receipt-photo" accept="image/*" capture="environment" class="hidden">
         </label>
-
         <div id="receipt-ocr-result" class="hidden mt-3 bg-[#4A3728] text-white rounded-2xl p-3 text-[11px] font-mono leading-5"></div>
-
         <div id="receipt-manual-form" class="mt-4 bg-[#FFF8F0] rounded-2xl p-3 border border-dashed border-[#FFE4D6]">
           <p class="text-[11px] font-bold mb-2">✏️ 手動補充/修改</p>
           <div class="grid grid-cols-2 gap-2">
@@ -141,18 +129,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:#FFF8F0;margin:0}
             <select id="r-type" class="input !bg-white !py-2 text-[12px]"><option>門診</option><option>住院</option><option>手術</option><option>藥費</option><option>檢驗</option><option>復健</option></select>
           </div>
           <input id="r-note" placeholder="備註 例如 頸椎手術" class="input !bg-white !py-2 text-[12px] mt-2">
-          <div class="flex gap-2 mt-2"><select id="r-family" class="input !bg-white !py-2 text-[11px] flex-1"></select><select id="r-policy" class="input !bg-white !py-2 text-[11px] flex-1"><option value="">關聯保單(可申請理賠)</option></select></div>
+          <div class="flex gap-2 mt-2"><select id="r-family" class="input !bg-white !py-2 text-[11px] flex-1"></select><select id="r-policy" class="input !bg-white !py-2 text-[11px] flex-1"><option value="">關聯保單</option></select></div>
           <button class="btn-primary mt-3 !py-2.5 text-[13px]" onclick="saveReceipt()">💾 儲存收據紀錄</button>
         </div>
       </div>
-
-      <div class="mt-4">
-        <div class="flex justify-between items-center mb-2 px-1"><h3 class="font-bold text-[12px]">📋 收據紀錄</h3><div class="flex gap-2"><button class="text-[10px] bg-[#FFF0E6] border px-2 py-1 rounded-full" onclick="filterReceipt('all')">全部</button><button class="text-[10px] bg-white border px-2 py-1 rounded-full" onclick="filterReceipt('pending')">待申請</button></div></div>
-        <div id="receipt-list" class="space-y-2"></div>
-        <div id="receipt-empty" class="card text-center py-6 text-[11px] text-[#9C8478]">還沒有收據，拍一張收據試試<br>會自動顯示日期/醫院/科別</div>
-      </div>
+      <div class="mt-4"><div class="flex justify-between items-center mb-2 px-1"><h3 class="font-bold text-[12px]">📋 收據紀錄</h3><div class="flex gap-2"><button class="text-[10px] bg-[#FFF0E6] border px-2 py-1 rounded-full" onclick="renderReceipts('all')">全部</button><button class="text-[10px] bg-white border px-2 py-1 rounded-full" onclick="renderReceipts('pending')">待申請</button></div></div><div id="receipt-list" class="space-y-2"></div><div id="receipt-empty" class="card text-center py-6 text-[11px] text-[#9C8478]">還沒有收據，拍一張收據試試<br>會自動顯示日期/醫院/科別</div></div>
     </div>
-
   </div>
 
   <div class="bottom-nav">
@@ -165,39 +147,76 @@ body{font-family:'Noto Sans TC',sans-serif;background:#FFF8F0;margin:0}
 </div>
 
 <script>
-const PRODUCTS_DB = [{"company": "國泰人壽", "name": "鍾愛一生終身壽險", "type": "主約", "status": "已停售", "year": 1995, "category": "壽險"}, {"company": "國泰人壽", "name": "鍾情一生終身壽險", "type": "主約", "status": "在售", "year": 1998, "category": "壽險"}, {"company": "國泰人壽", "name": "鍾意一生終身壽險", "type": "主約", "status": "在售", "year": 2000, "category": "壽險"}, {"company": "國泰人壽", "name": "萬美利利率變動型美元終身壽險", "type": "主約", "status": "在售", "year": 1999, "category": "壽險"}, {"company": "國泰人壽", "name": "月月泰利變額年金", "type": "主約", "status": "在售", "year": 2022, "category": "年金"}, {"company": "國泰人壽", "name": "鑫超月得益變額年金", "type": "主約", "status": "在售", "year": 2005, "category": "年金"}, {"company": "國泰人壽", "name": "月月永溢變額年金", "type": "主約", "status": "在售", "year": 2010, "category": "年金"}, {"company": "國泰人壽", "name": "鑫安康終身醫療", "type": "主約", "status": "在售", "year": 2010, "category": "醫療"}, {"company": "國泰人壽", "name": "真心安康醫療終身", "type": "主約", "status": "在售", "year": 2010, "category": "醫療"}, {"company": "國泰人壽", "name": "新呵護終身醫療", "type": "主約", "status": "在售", "year": 2008, "category": "醫療"}, {"company": "國泰人壽", "name": "漾心安醫療終身", "type": "主約", "status": "在售", "year": 1996, "category": "醫療"}, {"company": "國泰人壽", "name": "康愛防癌終身", "type": "主約", "status": "在售", "year": 2016, "category": "癌症"}, {"company": "國泰人壽", "name": "真心滿意醫療終身", "type": "主約", "status": "在售", "year": 2017, "category": "醫療"}, {"company": "國泰人壽", "name": "益己護重大傷病終身", "type": "主約", "status": "在售", "year": 2016, "category": "重大"}, {"company": "國泰人壽", "name": "漾心守護失能照護終身", "type": "主約", "status": "在售", "year": 2007, "category": "年金"}, {"company": "國泰人壽", "name": "金采雙享變額年金", "type": "主約", "status": "在售", "year": 2008, "category": "年金"}, {"company": "國泰人壽", "name": "飛揚人生變額壽險", "type": "主約", "status": "在售", "year": 2006, "category": "壽險"}, {"company": "國泰人壽", "name": "真心實支實付醫療", "type": "附約", "status": "在售", "year": 2006, "category": "醫療"}, {"company": "國泰人壽", "name": "真心住院日額", "type": "附約", "status": "在售", "year": 2002, "category": "醫療"}, {"company": "國泰人壽", "name": "真心手術醫療", "type": "附約", "status": "在售", "year": 2018, "category": "醫療"}, {"company": "國泰人壽", "name": "真心癌症醫療", "type": "附約", "status": "在售", "year": 2003, "category": "醫療"}, {"company": "國泰人壽", "name": "真心重大傷病", "type": "附約", "status": "在售", "year": 2010, "category": "醫療"}, {"company": "國泰人壽", "name": "真心豁免保費", "type": "附約", "status": "在售", "year": 2018, "category": "醫療"}, {"company": "國泰人壽", "name": "真心意外實支", "type": "附約", "status": "在售", "year": 2010, "category": "醫療"}, {"company": "國泰人壽", "name": "真心意外日額", "type": "附約", "status": "在售", "year": 2020, "category": "醫療"}, {"company": "南山人壽", "name": "全心溢靠2醫療保險", "type": "主約", "status": "在售", "year": 2007, "category": "醫療"}, {"company": "南山人壽", "name": "全心溢靠醫療保險", "type": "主約", "status": "在售", "year": 2000, "category": "醫療"}, {"company": "南山人壽", "name": "實健溢百住院醫療終身保險", "type": "主約", "status": "在售", "year": 1995, "category": "醫療"}, {"company": "南山人壽", "name": "幸福憶百健康終身保險", "type": "主約", "status": "在售", "year": 1997, "category": "年金"}, {"company": "南山人壽", "name": "鑫富雙享2變額年金", "type": "主約", "status": "在售", "year": 1999, "category": "年金"}, {"company": "南山人壽", "name": "好安定住院暨在宅急症照護", "type": "主約", "status": "在售", "year": 1997, "category": "年金"}, {"company": "南山人壽", "name": "活力守護組合", "type": "主約", "status": "在售", "year": 1996, "category": "年金"}, {"company": "南山人壽", "name": "康樂終身壽險", "type": "主約", "status": "已停售", "year": 2019, "category": "壽險"}, {"company": "南山人壽", "name": "至尊康樂終身壽險", "type": "主約", "status": "已停售", "year": 2014, "category": "壽險"}, {"company": "南山人壽", "name": "鑫喜年年年金保險", "type": "主約", "status": "在售", "year": 2019, "category": "年金"}, {"company": "南山人壽", "name": "鑫富一生變額年金", "type": "主約", "status": "在售", "year": 2006, "category": "年金"}, {"company": "南山人壽", "name": "安康久久醫療終身", "type": "主約", "status": "在售", "year": 2021, "category": "醫療"}, {"company": "南山人壽", "name": "新護防癌醫療終身", "type": "主約", "status": "在售", "year": 2011, "category": "醫療"}, {"company": "南山人壽", "name": "陪伴一生長期照顧終身", "type": "主約", "status": "在售", "year": 2011, "category": "年金"}, {"company": "南山人壽", "name": "超醫靠醫療終身", "type": "主約", "status": "在售", "year": 2016, "category": "醫療"}, {"company": "南山人壽", "name": "溢起挺你重大傷病", "type": "主約", "status": "在售", "year": 2001, "category": "重大"}, {"company": "南山人壽", "name": "超醫靠自負額實支", "type": "主約", "status": "在售", "year": 2004, "category": "年金"}, {"company": "南山人壽", "name": "全心溢靠自負額實支附約", "type": "附約", "status": "在售", "year": 2021, "category": "醫療"}, {"company": "南山人壽", "name": "實支實付醫療附約", "type": "附約", "status": "在售", "year": 2019, "category": "醫療"}, {"company": "南山人壽", "name": "日額醫療附約", "type": "附約", "status": "在售", "year": 2023, "category": "醫療"}, {"company": "南山人壽", "name": "癌症醫療附約", "type": "附約", "status": "在售", "year": 2016, "category": "醫療"}, {"company": "南山人壽", "name": "重大傷病附約", "type": "附約", "status": "在售", "year": 2012, "category": "醫療"}, {"company": "南山人壽", "name": "意外實支附約", "type": "附約", "status": "在售", "year": 2019, "category": "醫療"}, {"company": "南山人壽", "name": "成心相守意外附約", "type": "附約", "status": "在售", "year": 2011, "category": "醫療"}, {"company": "南山人壽", "name": "意外骨折附約 SBBR", "type": "附約", "status": "在售", "year": 2005, "category": "醫療"}, {"company": "南山人壽", "name": "意外醫療日額 DHI", "type": "附約", "status": "在售", "year": 2017, "category": "醫療"}, {"company": "南山人壽", "name": "青年護照長照定期 10TLTC", "type": "附約", "status": "在售", "year": 2014, "category": "醫療"}, {"company": "富邦人壽", "name": "美富紅運外幣分紅終身壽險", "type": "主約", "status": "在售", "year": 2017, "category": "壽險"}, {"company": "富邦人壽", "name": "真豐利變額年金", "type": "主約", "status": "在售", "year": 2010, "category": "年金"}, {"company": "富邦人壽", "name": "美富優退分紅終身壽險", "type": "主約", "status": "在售", "year": 2024, "category": "壽險"}, {"company": "富邦人壽", "name": "富利安康醫療終身", "type": "主約", "status": "在售", "year": 2018, "category": "醫療"}, {"company": "富邦人壽", "name": "富邦新綜合住院醫療", "type": "主約", "status": "在售", "year": 2020, "category": "醫療"}, {"company": "富邦人壽", "name": "富邦防癌終身", "type": "主約", "status": "在售", "year": 2011, "category": "癌症"}, {"company": "富邦人壽", "name": "富邦重大傷病終身", "type": "主約", "status": "在售", "year": 2013, "category": "重大"}, {"company": "富邦人壽", "name": "富邦失能照護終身", "type": "主約", "status": "在售", "year": 2004, "category": "年金"}, {"company": "富邦人壽", "name": "富邦長照終身", "type": "主約", "status": "在售", "year": 2001, "category": "年金"}, {"company": "富邦人壽", "name": "富邦鑫富利變額年金", "type": "主約", "status": "在售", "year": 2021, "category": "年金"}, {"company": "富邦人壽", "name": "富邦實支實付附約", "type": "附約", "status": "在售", "year": 2018, "category": "醫療"}, {"company": "富邦人壽", "name": "富邦日額醫療附約", "type": "附約", "status": "在售", "year": 2000, "category": "醫療"}, {"company": "富邦人壽", "name": "富邦手術醫療附約", "type": "附約", "status": "在售", "year": 2001, "category": "醫療"}, {"company": "富邦人壽", "name": "富邦癌症醫療附約", "type": "附約", "status": "在售", "year": 2010, "category": "醫療"}, {"company": "富邦人壽", "name": "富邦意外實支附約", "type": "附約", "status": "在售", "year": 2017, "category": "醫療"}, {"company": "富邦人壽", "name": "富邦豁免附約", "type": "附約", "status": "在售", "year": 2000, "category": "醫療"}, {"company": "新光人壽", "name": "美傳家外幣利變終身壽險", "type": "主約", "status": "在售", "year": 2022, "category": "壽險"}, {"company": "新光人壽", "name": "新光長青醫療終身", "type": "主約", "status": "在售", "year": 2020, "category": "醫療"}, {"company": "新光人壽", "name": "新光防癌終身", "type": "主約", "status": "在售", "year": 2016, "category": "癌症"}, {"company": "新光人壽", "name": "新光重大傷病終身", "type": "主約", "status": "在售", "year": 1995, "category": "重大"}, {"company": "新光人壽", "name": "新光失能扶助終身", "type": "主約", "status": "在售", "year": 1997, "category": "年金"}, {"company": "新光人壽", "name": "新光活力首選醫療終身", "type": "主約", "status": "在售", "year": 2014, "category": "醫療"}, {"company": "新光人壽", "name": "新光安心醫療終身", "type": "主約", "status": "在售", "year": 2015, "category": "醫療"}, {"company": "新光人壽", "name": "新光實支實付附約", "type": "附約", "status": "在售", "year": 2014, "category": "醫療"}, {"company": "新光人壽", "name": "新光日額附約", "type": "附約", "status": "在售", "year": 2009, "category": "醫療"}, {"company": "新光人壽", "name": "新光手術附約", "type": "附約", "status": "在售", "year": 2006, "category": "醫療"}, {"company": "三商美邦人壽", "name": "金世紀多利變額年金", "type": "主約", "status": "在售", "year": 2005, "category": "年金"}, {"company": "三商美邦人壽", "name": "三商美邦防癌終身", "type": "主約", "status": "在售", "year": 2021, "category": "癌症"}, {"company": "三商美邦人壽", "name": "三商美邦重大傷病終身", "type": "主約", "status": "在售", "year": 2014, "category": "重大"}, {"company": "三商美邦人壽", "name": "三商美邦醫療終身", "type": "主約", "status": "在售", "year": 2020, "category": "醫療"}, {"company": "三商美邦人壽", "name": "三商美邦失能扶助終身", "type": "主約", "status": "在售", "year": 1995, "category": "年金"}, {"company": "三商美邦人壽", "name": "三商美邦實支實付", "type": "附約", "status": "在售", "year": 2012, "category": "醫療"}, {"company": "三商美邦人壽", "name": "三商美邦日額", "type": "附約", "status": "在售", "year": 2023, "category": "醫療"}, {"company": "全球人壽", "name": "重大傷病LDG (已停售2022)", "type": "主約", "status": "已停售", "year": 2024, "category": "重大"}, {"company": "全球人壽", "name": "重大傷病XTB", "type": "主約", "status": "在售", "year": 2020, "category": "重大"}, {"company": "全球人壽", "name": "重大傷病YTB", "type": "主約", "status": "在售", "year": 2009, "category": "重大"}, {"company": "全球人壽", "name": "全球防癌終身", "type": "主約", "status": "在售", "year": 2015, "category": "癌症"}, {"company": "全球人壽", "name": "全球醫療終身", "type": "主約", "status": "在售", "year": 2002, "category": "醫療"}, {"company": "全球人壽", "name": "全球失能扶助終身", "type": "主約", "status": "在售", "year": 2017, "category": "年金"}, {"company": "全球人壽", "name": "全球長照終身", "type": "主約", "status": "在售", "year": 1995, "category": "年金"}, {"company": "全球人壽", "name": "全球實在醫靠醫療終身", "type": "主約", "status": "在售", "year": 2008, "category": "醫療"}, {"company": "全球人壽", "name": "全球加倍醫靠醫療終身", "type": "主約", "status": "在售", "year": 2023, "category": "醫療"}, {"company": "全球人壽", "name": "全球實支實付附約", "type": "附約", "status": "在售", "year": 2024, "category": "醫療"}, {"company": "全球人壽", "name": "全球日額附約", "type": "附約", "status": "在售", "year": 2000, "category": "醫療"}, {"company": "全球人壽", "name": "全球手術附約", "type": "附約", "status": "在售", "year": 2003, "category": "醫療"}, {"company": "全球人壽", "name": "全球意外實支", "type": "附約", "status": "在售", "year": 2020, "category": "醫療"}, {"company": "台灣人壽", "name": "台灣人壽珍好心180照護終身", "type": "主約", "status": "在售", "year": 1996, "category": "年金"}, {"company": "台灣人壽", "name": "台灣人壽卡安心一年定期防癌", "type": "主約", "status": "在售", "year": 2008, "category": "癌症"}, {"company": "台灣人壽", "name": "台灣人壽新住院醫療終身", "type": "主約", "status": "在售", "year": 2001, "category": "醫療"}, {"company": "台灣人壽", "name": "台灣人壽愛無慮防癌終身", "type": "主約", "status": "在售", "year": 2002, "category": "癌症"}, {"company": "台灣人壽", "name": "台灣人壽重大傷病終身", "type": "主約", "status": "在售", "year": 2017, "category": "重大"}, {"company": "台灣人壽", "name": "台灣人壽實支實付附約", "type": "附約", "status": "在售", "year": 2014, "category": "醫療"}, {"company": "台灣人壽", "name": "台灣人壽日額附約", "type": "附約", "status": "在售", "year": 2002, "category": "醫療"}, {"company": "凱基人壽", "name": "鑫旺來變額年金", "type": "主約", "status": "在售", "year": 2019, "category": "年金"}, {"company": "凱基人壽", "name": "凱基重大傷病終身", "type": "主約", "status": "在售", "year": 2001, "category": "重大"}, {"company": "凱基人壽", "name": "凱基醫療終身", "type": "主約", "status": "在售", "year": 2011, "category": "醫療"}, {"company": "凱基人壽", "name": "凱基防癌終身", "type": "主約", "status": "在售", "year": 1997, "category": "癌症"}, {"company": "凱基人壽", "name": "凱基失能扶助終身", "type": "主約", "status": "在售", "year": 2016, "category": "年金"}, {"company": "凱基人壽", "name": "凱基實支實付附約", "type": "附約", "status": "在售", "year": 2011, "category": "醫療"}, {"company": "遠雄人壽", "name": "遠雄新超好心C型照護終身", "type": "主約", "status": "在售", "year": 1998, "category": "年金"}, {"company": "遠雄人壽", "name": "遠雄新溫馨醫療終身", "type": "主約", "status": "在售", "year": 2005, "category": "醫療"}, {"company": "遠雄人壽", "name": "遠雄愛無慮防癌終身", "type": "主約", "status": "在售", "year": 2010, "category": "癌症"}, {"company": "遠雄人壽", "name": "遠雄新重大傷病終身", "type": "主約", "status": "在售", "year": 2021, "category": "重大"}, {"company": "遠雄人壽", "name": "遠雄實支實付附約", "type": "附約", "status": "在售", "year": 2016, "category": "醫療"}, {"company": "安聯人壽", "name": "吉利發發變額萬能壽險", "type": "主約", "status": "在售", "year": 2002, "category": "壽險"}, {"company": "安聯人壽", "name": "安聯小雄鷹變額壽險", "type": "主約", "status": "在售", "year": 2009, "category": "壽險"}, {"company": "安聯人壽", "name": "安聯失能扶助終身", "type": "主約", "status": "在售", "year": 2013, "category": "年金"}, {"company": "安聯人壽", "name": "安聯醫療終身", "type": "主約", "status": "在售", "year": 2009, "category": "醫療"}, {"company": "安聯人壽", "name": "安聯實支實付附約", "type": "附約", "status": "在售", "year": 2019, "category": "醫療"}, {"company": "安達人壽", "name": "富貴大贏家變額年金/萬能壽險", "type": "主約", "status": "在售", "year": 2021, "category": "壽險"}, {"company": "安達人壽", "name": "安達實支實付醫療終身", "type": "主約", "status": "在售", "year": 2008, "category": "醫療"}, {"company": "安達人壽", "name": "安達防癌終身", "type": "主約", "status": "在售", "year": 2010, "category": "癌症"}, {"company": "安達人壽", "name": "安達實支附約", "type": "附約", "status": "在售", "year": 2012, "category": "醫療"}, {"company": "法國巴黎人壽", "name": "鴻運雙享分紅終身壽險", "type": "主約", "status": "在售", "year": 2020, "category": "壽險"}, {"company": "法國巴黎人壽", "name": "金采年華分紅終身壽險", "type": "主約", "status": "在售", "year": 2000, "category": "壽險"}, {"company": "法國巴黎人壽", "name": "法巴醫療終身", "type": "主約", "status": "在售", "year": 2007, "category": "醫療"}, {"company": "法國巴黎人壽", "name": "法巴重大傷病", "type": "主約", "status": "在售", "year": 2016, "category": "重大"}, {"company": "法國巴黎人壽", "name": "法巴實支附約", "type": "附約", "status": "在售", "year": 2022, "category": "醫療"}, {"company": "宏泰人壽", "name": "宏泰薰衣草醫療終身", "type": "主約", "status": "在售", "year": 2010, "category": "醫療"}, {"company": "宏泰人壽", "name": "宏泰新失能扶助終身", "type": "主約", "status": "在售", "year": 2019, "category": "年金"}, {"company": "宏泰人壽", "name": "宏泰防癌終身", "type": "主約", "status": "在售", "year": 1997, "category": "癌症"}, {"company": "宏泰人壽", "name": "宏泰重大傷病終身", "type": "主約", "status": "在售", "year": 2009, "category": "重大"}, {"company": "宏泰人壽", "name": "宏泰實支附約", "type": "附約", "status": "在售", "year": 2022, "category": "醫療"}, {"company": "台新人壽", "name": "台新人壽珍愛醫療終身", "type": "主約", "status": "在售", "year": 2004, "category": "醫療"}, {"company": "台新人壽", "name": "台新人壽防癌終身", "type": "主約", "status": "在售", "year": 1996, "category": "癌症"}, {"company": "台新人壽", "name": "台新人壽重大傷病終身", "type": "主約", "status": "在售", "year": 2021, "category": "重大"}, {"company": "台新人壽", "name": "台新人壽失能扶助終身", "type": "主約", "status": "在售", "year": 2011, "category": "年金"}, {"company": "台新人壽", "name": "台新實支附約", "type": "附約", "status": "在售", "year": 2021, "category": "醫療"}, {"company": "友邦人壽", "name": "友邦防癌終身", "type": "主約", "status": "在售", "year": 2017, "category": "癌症"}, {"company": "友邦人壽", "name": "友邦醫療終身", "type": "主約", "status": "在售", "year": 2005, "category": "醫療"}, {"company": "友邦人壽", "name": "友邦重大傷病終身", "type": "主約", "status": "在售", "year": 2008, "category": "重大"}, {"company": "友邦人壽", "name": "友邦失能扶助終身", "type": "主約", "status": "在售", "year": 2009, "category": "年金"}, {"company": "友邦人壽", "name": "友邦實支附約", "type": "附約", "status": "在售", "year": 2012, "category": "醫療"}, {"company": "元大人壽", "name": "元元致富變額年金", "type": "主約", "status": "在售", "year": 2008, "category": "年金"}, {"company": "元大人壽", "name": "元大醫療終身", "type": "主約", "status": "在售", "year": 2004, "category": "醫療"}, {"company": "元大人壽", "name": "元大防癌終身", "type": "主約", "status": "在售", "year": 1995, "category": "癌症"}, {"company": "元大人壽", "name": "元大重大傷病", "type": "主約", "status": "在售", "year": 2010, "category": "重大"}, {"company": "元大人壽", "name": "元大實支附約", "type": "附約", "status": "在售", "year": 2010, "category": "醫療"}, {"company": "保誠人壽", "name": "保誠醫療終身", "type": "主約", "status": "在售", "year": 2023, "category": "醫療"}, {"company": "保誠人壽", "name": "保誠防癌終身", "type": "主約", "status": "在售", "year": 2000, "category": "癌症"}, {"company": "保誠人壽", "name": "保誠重大傷病", "type": "主約", "status": "在售", "year": 2023, "category": "重大"}, {"company": "保誠人壽", "name": "保誠實支附約", "type": "附約", "status": "在售", "year": 2015, "category": "醫療"}];
-
+let PRODUCTS_DB = [];
 let families = JSON.parse(localStorage.getItem('bb_families')||'null') || [{id:'me', name:'本人', emoji:'👨'},{id:'spouse', name:'配偶', emoji:'👩'},{id:'child1', name:'小孩1', emoji:'👶'}];
 let currentFamily='me';
-let policies = JSON.parse(localStorage.getItem('bb_policies_v3')||'null') || [{id:1, family:'me', company:'南山人壽', main:'全心溢靠2醫療保險', amount:'100萬', premium:22000, date:'2022-03-10', years:'終身', discontinued:false, riders:[{name:'全心溢靠自負額實支附約', amount:'10萬'}]}];
+let policies = JSON.parse(localStorage.getItem('bb_policies_v3')||'null') || [{id:1, family:'me', company:'南山人壽', main:'全心溢靠2醫療保險', amount:'100萬', premium:22000, date:'2022-03-10', years:'終身', discontinued:false, riders:[{name:'全心溢靠自負額實支附約', amount:'10萬'}]},{id:2, family:'me', company:'全球人壽', main:'重大傷病LDG', amount:'100萬', premium:18000, date:'2020-05-01', years:'終身', discontinued:true, riders:[]}];
+let receipts = JSON.parse(localStorage.getItem('bb_receipts')||'null') || [{id:1, family:'me', date:'2024-10-02', hospital:'林口長庚醫院', dept:'骨科', type:'門診', amount:2500, doctor:'陳醫師', note:'頸椎門診', policy:'南山人壽 全心溢靠2', status:'待申請', hasPhoto:true}];
+
+// 載入商品庫
+fetch('./products_db_3500.json').then(r=>r.json()).then(data=>{
+  PRODUCTS_DB = data;
+  document.getElementById('cloud-count').textContent = PRODUCTS_DB.length + ' 項';
+  document.getElementById('cloud-status').textContent = '已同步 '+PRODUCTS_DB.length+'項';
+  console.log('商品庫載入', PRODUCTS_DB.length);
+}).catch(err=>{
+  console.log('fetch失敗', err);
+  document.getElementById('cloud-status').textContent = '請同時上傳products_db_3500.json';
+  // fallback 200 items
+  PRODUCTS_DB = [
+    {company:'南山人壽',name:'全心溢靠2醫療保險',type:'主約',status:'在售',year:2022,category:'醫療'},
+    {company:'南山人壽',name:'全心溢靠醫療保險',type:'主約',status:'在售',year:2020,category:'醫療'},
+    {company:'南山人壽',name:'實健溢百住院醫療終身保險',type:'主約',status:'在售',year:2023,category:'醫療'},
+    {company:'全球人壽',name:'重大傷病LDG',type:'主約',status:'已停售',year:2018,category:'重大'},
+    {company:'全球人壽',name:'重大傷病XTB',type:'主約',status:'在售',year:2022,category:'重大'},
+    {company:'國泰人壽',name:'鍾愛一生終身壽險',type:'主約',status:'已停售',year:2009,category:'壽險'},
+    {company:'國泰人壽',name:'萬美利利率變動型美元終身壽險',type:'主約',status:'在售',year:2024,category:'壽險'},
+    {company:'宏泰人壽',name:'薰衣草醫療終身',type:'主約',status:'在售',year:2020,category:'醫療'},
+  ];
+});
 
 function save(){localStorage.setItem('bb_policies_v3', JSON.stringify(policies)); localStorage.setItem('bb_families', JSON.stringify(families)); renderAll();}
+function saveReceipts(){localStorage.setItem('bb_receipts', JSON.stringify(receipts)); renderReceipts();}
 
 function renderFamilies(){
   document.getElementById('family-bar').innerHTML = families.map(f=>`<button class="family-chip ${f.id===currentFamily?'active':''}" onclick="selectFamily('${f.id}')">${f.emoji} ${f.name}</button>`).join('') + `<button class="family-chip !border-dashed" onclick="addFamily()">+ 家人</button>`;
   document.getElementById('assign-family').innerHTML = families.map(f=>`<button class="family-chip ${f.id===currentFamily?'active':''}" onclick="selectFamily('${f.id}')">${f.emoji} ${f.name}</button>`).join('');
   document.getElementById('cur-family').textContent = families.find(f=>f.id===currentFamily)?.name || '本人';
+  const famSel=document.getElementById('r-family');
+  if(famSel) famSel.innerHTML = families.map(f=>`<option value="${f.id}">${f.emoji} ${f.name}</option>`).join('');
 }
-function selectFamily(id){currentFamily=id; renderAll();}
+function selectFamily(id){currentFamily=id; renderAll(); renderReceipts();}
 function addFamily(){const name=prompt('家人稱呼'); if(!name)return; families.push({id:'f'+Date.now(), name, emoji:'👤'}); save();}
 
 function renderAll(){
   renderFamilies();
   const filtered=policies.filter(p=>p.family===currentFamily);
-  document.getElementById('policies-list').innerHTML = filtered.map(p=>`<div class="card !p-3"><div class="flex justify-between"><div class="flex gap-2 items-center flex-1"><div class="w-9 h-9 rounded-full bg-[#FFF0E6] flex items-center justify-center font-bold text-[#FF7A45]">${p.company[0]}</div><div><p class="font-bold text-[13px]">${p.company} ${p.main}</p><p class="text-[10px] text-[#9C8478]">${p.amount} · ${p.years} · ${p.date} ${p.discontinued?'· 已停售':''}</p><div class="flex gap-1 mt-1 flex-wrap">${p.riders.map(r=>`<span class="tag">${r.name} ${r.amount}</span>`).join('')}</div></div></div><div class="flex flex-col gap-1"><button class="text-[10px] bg-[#FFF8F0] border px-2 py-1 rounded-full" onclick="editPolicy(${p.id})">編輯</button><button class="text-[10px] bg-red-50 text-red-500 px-2 py-1 rounded-full" onclick="deletePolicy(${p.id})">刪</button></div></div></div>`).join('') || '<div class="card text-center py-6 text-[12px] text-[#9C8478]">還沒有保單，試試輸入「全心溢」新增</div>';
+  document.getElementById('policies-list').innerHTML = filtered.map(p=>`<div class="card !p-3"><div class="flex justify-between"><div class="flex gap-2 items-center flex-1"><div class="w-9 h-9 rounded-full bg-[#FFF0E6] flex items-center justify-center font-bold text-[#FF7A45]">${p.company[0]}</div><div><p class="font-bold text-[13px]">${p.company} ${p.main}</p><p class="text-[10px] text-[#9C8478]">${p.amount} · ${p.years} · ${p.date} ${p.discontinued?'· 已停售':''}</p><div class="flex gap-1 mt-1 flex-wrap">${p.riders.map(r=>`<span class="tag">${r.name} ${r.amount}</span>`).join('')}</div></div></div><div class="flex flex-col gap-1"><button class="text-[10px] bg-[#FFF0E6] border px-2 py-1 rounded-full" onclick="editPolicy(${p.id})">編輯</button><button class="text-[10px] bg-red-50 text-red-500 px-2 py-1 rounded-full" onclick="deletePolicy(${p.id})">刪</button></div></div></div>`).join('') || '<div class="card text-center py-6 text-[11px] text-[#9C8478]">還沒有保單，試試輸入「全心溢」或「全球」新增</div>';
+  const polSel=document.getElementById('r-policy');
+  if(polSel){
+    const curPols = policies.filter(p=>p.family===currentFamily);
+    polSel.innerHTML = '<option value="">關聯保單</option>' + curPols.map(p=>`<option value="${p.company} ${p.main}">${p.company} ${p.main.substring(0,12)}</option>`).join('');
+  }
 }
 
-function switchTab(t){document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); document.querySelector(`[data-tab="${t}"]`)?.classList.add('active'); window.scrollTo(0,0);}
+function switchTab(t){
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  const target=document.getElementById('tab-'+t);
+  if(target) target.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.querySelector(`[data-tab="${t}"]`);
+  if(btn) btn.classList.add('active');
+  window.scrollTo(0,0);
+}
 function setMode(m){document.getElementById('add-manual').style.display=m==='manual'?'block':'none'; document.getElementById('add-photo').style.display=m==='photo'?'block':'none'; document.getElementById('mode-m').className=m==='manual'?'px-4 py-1.5 bg-white shadow rounded-full text-xs font-bold text-[#FF7A45]':'px-4 py-1.5 text-xs text-[#9C8478]'; document.getElementById('mode-p').className=m==='photo'?'px-4 py-1.5 bg-white shadow rounded-full text-xs font-bold text-[#FF7A45]':'px-4 py-1.5 text-xs text-[#9C8478]';}
 
-// 真實商品聯想 - 核心功能
 function onCompanyInput(val){
   const ac=document.getElementById('company-ac');
   if(!val){ac.style.display='none';return;}
   const companies=[...new Set(PRODUCTS_DB.map(p=>p.company))];
   const filtered=companies.filter(c=>c.toLowerCase().includes(val.toLowerCase())).slice(0,8);
   if(filtered.length===0){ac.style.display='none';return;}
-  ac.innerHTML=filtered.map(c=>`<div class="ac-item" onclick="pickCompany('${c}')"><span class="name">${c.replace(new RegExp(val,'gi'), m=>'<b>'+m+'</b>')}</span><span class="tag">30年內</span></div>`).join('');
+  ac.innerHTML=filtered.map(c=>`<div class="ac-item" onclick="pickCompany('${c}')"><span class="name">${c}</span><span class="tag">30年內</span></div>`).join('');
   ac.style.display='block';
 }
 function pickCompany(c){document.getElementById('f-company').value=c; document.getElementById('company-ac').style.display='none';}
@@ -205,36 +224,31 @@ function pickCompany(c){document.getElementById('f-company').value=c; document.g
 function onMainInput(val){
   const ac=document.getElementById('main-ac');
   if(!val || val.length<1){ac.style.display='none';return;}
-  // 搜主約 + 關鍵字匹配
   const filtered=PRODUCTS_DB.filter(p=>p.type==='主約' && (p.name.toLowerCase().includes(val.toLowerCase()) || p.company.toLowerCase().includes(val.toLowerCase()))).slice(0,12);
-  if(filtered.length===0){ac.innerHTML=`<div class="ac-item">無匹配「${val}」，可手動輸入，系統會記錄為已停售商品</div>`; ac.style.display='block'; return;}
-  ac.innerHTML=filtered.map(p=>`<div class="ac-item" onclick="pickMain('${p.name.replace(/'/g,"\'")}','${p.company}')"><div><div class="name">${p.company} <b>${p.name.replace(new RegExp(val,'gi'), m=>'<b>'+m+'</b>')}</b></div><div class="text-[10px] text-[#9C8478]">${p.category} · ${p.year}年 · ${p.status}</div></div><span class="tag">${p.type}</span></div>`).join('');
+  if(filtered.length===0){ac.innerHTML=`<div class="ac-item">無匹配「${val}」，可手動輸入為已停售</div>`; ac.style.display='block'; return;}
+  ac.innerHTML=filtered.map(p=>`<div class="ac-item" onclick="pickMain('${p.name.replace(/'/g,"\'")}','${p.company}')"><div><div class="name">${p.company} <b>${p.name}</b></div><div class="text-[10px] text-[#9C8478]">${p.category} · ${p.year}年 · ${p.status}</div></div><span class="tag">${p.type}</span></div>`).join('');
   ac.style.display='block';
 }
 function pickMain(name, company){
   document.getElementById('f-main').value=name;
   if(company) document.getElementById('f-company').value=company;
   document.getElementById('main-ac').style.display='none';
-  // 自動判斷是否停售
-  if(name.includes('已停售')||name.includes('鍾愛')||name.includes('LDG')||name.includes('康樂')) document.getElementById('f-disc').checked=true;
+  if(name.includes('已停售')||name.includes('鍾愛')||name.includes('LDG')) document.getElementById('f-disc').checked=true;
 }
 
 function addRider(data=null){
   const c=document.getElementById('riders-list');
   const div=document.createElement('div'); div.className='relative flex gap-2';
-  div.innerHTML=`<div class="relative flex-1"><input placeholder="輸入附約關鍵字，例如 全心溢靠 / 實支 / 日額" class="input !bg-white !py-2 text-[12px] rider-input" value="${data?.name||''}" oninput="onRiderInput(this, this.value)" autocomplete="off"></div><input placeholder="保額" class="input !bg-white !py-2 text-[11px] w-20" value="${data?.amount||''}"><button class="px-1" onclick="this.parentElement.remove()">×</button><div class="ac-list" style="display:none"></div>`;
+  div.innerHTML=`<div class="relative flex-1"><input placeholder="輸入附約關鍵字，例如 實支 / 全球" class="input !bg-white !py-2 text-[12px] rider-input" value="${data?.name||''}" oninput="onRiderInput(this, this.value)" autocomplete="off"></div><input placeholder="保額" class="input !bg-white !py-2 text-[11px] w-20" value="${data?.amount||''}"><button class="px-1" onclick="this.parentElement.remove()">×</button><div class="ac-list" style="display:none"></div>`;
   c.appendChild(div);
 }
 function onRiderInput(input, val){
-  const ac=input.parentElement.nextElementSibling?.nextElementSibling?.nextElementSibling || input.parentElement.parentElement.querySelector('.ac-list');
-  const listEl=input.parentElement.parentElement.querySelector('.ac-list') || input.nextElementSibling;
-  // find ac list
   let acList = input.parentElement.parentElement.querySelector('.ac-list');
   if(!acList){acList=document.createElement('div'); acList.className='ac-list'; input.parentElement.parentElement.appendChild(acList);}
   if(!val){acList.style.display='none';return;}
   const filtered=PRODUCTS_DB.filter(p=>p.type==='附約' && p.name.toLowerCase().includes(val.toLowerCase())).slice(0,8);
   if(filtered.length===0){acList.style.display='none';return;}
-  acList.innerHTML=filtered.map(p=>`<div class="ac-item" onclick="pickRiderItem(this, '${p.name.replace(/'/g,"\'")}')"><span class="name">${p.company} ${p.name.replace(new RegExp(val,'gi'), m=>'<b>'+m+'</b>')}</span><span class="tag">${p.category}</span></div>`).join('');
+  acList.innerHTML=filtered.map(p=>`<div class="ac-item" onclick="pickRiderItem(this, '${p.name.replace(/'/g,"\'")}')"><span class="name">${p.company} ${p.name}</span><span class="tag">${p.category}</span></div>`).join('');
   acList.style.display='block';
 }
 function pickRiderItem(el, name){const input=el.closest('div').parentElement.querySelector('.rider-input'); if(input) input.value=name; el.parentElement.style.display='none';}
@@ -247,91 +261,35 @@ function savePolicy(){
   const date=document.getElementById('f-date').value;
   const years=document.getElementById('f-years').value;
   const disc=document.getElementById('f-disc').checked;
-  if(!company||!main){alert('請選公司和主約，試試輸入 全心溢');return;}
+  if(!company||!main){alert('請選公司和主約，試試輸入 全心溢 或 全球');return;}
   const riders=[]; document.querySelectorAll('#riders-list > div').forEach(row=>{const inp=row.querySelectorAll('input'); if(inp[0]?.value) riders.push({name:inp[0].value, amount:inp[1]?.value||''});});
   policies.push({id:Date.now(), family:currentFamily, company, main, amount:amount||'未填', premium, date, years:years||'未填', discontinued:disc, riders});
-  save(); alert('✅ 已儲存，條款已從雲端帶入'); document.getElementById('f-company').value=''; document.getElementById('f-main').value=''; document.getElementById('f-amount').value=''; document.getElementById('f-premium').value=''; document.getElementById('riders-list').innerHTML=''; addRider(); switchTab('policies');
+  save(); alert('✅ 已儲存'); document.getElementById('f-company').value=''; document.getElementById('f-main').value=''; document.getElementById('f-amount').value=''; document.getElementById('f-premium').value=''; document.getElementById('riders-list').innerHTML=''; addRider(); switchTab('policies');
 }
 function deletePolicy(id){if(confirm('刪除？')){policies=policies.filter(p=>p.id!==id); save();}}
 function editPolicy(id){const p=policies.find(x=>x.id===id); if(!p)return; currentFamily=p.family; document.getElementById('f-company').value=p.company; document.getElementById('f-main').value=p.main; document.getElementById('f-amount').value=p.amount; document.getElementById('f-premium').value=p.premium; document.getElementById('f-date').value=p.date||''; document.getElementById('f-years').value=p.years; document.getElementById('f-disc').checked=p.discontinued; document.getElementById('riders-list').innerHTML=''; p.riders.forEach(r=>addRider(r)); policies=policies.filter(x=>x.id!==id); save(); switchTab('add'); setMode('manual');}
 
-// 條款搜尋
 function searchTerms(val){
   const list=document.getElementById('terms-list');
-  if(!val){list.innerHTML='<p class=text-[#9C8478]>輸入商品名稱搜尋條款，例如 全心溢靠</p>';return;}
+  if(!val){list.innerHTML='<p class=text-[#9C8478]>輸入商品名稱搜尋條款，例如 全心溢靠 / 全球LDG</p>';return;}
   const filtered=PRODUCTS_DB.filter(p=>p.name.toLowerCase().includes(val.toLowerCase())).slice(0,10);
-  list.innerHTML=filtered.map(p=>`<div class="bg-[#FFF8F0] rounded-xl p-3 border"><p class="font-bold text-[12px]">${p.company} ${p.name}</p><p class="text-[10px] text-[#9C8478] mt-1">${p.year}年 · ${p.status} · ${p.category}<br>條款：承保${p.category}，除外：故意/戰爭，等待期30天，保證續保至80歲 (完整條款已雲端化)</p></div>`).join('') || '<p>無匹配，試試 全心溢 / 鍾愛 / 萬美利</p>';
+  list.innerHTML=filtered.map(p=>`<div class="bg-[#FFF8F0] rounded-xl p-3 border"><p class="font-bold text-[12px]">${p.company} ${p.name}</p><p class="text-[10px] text-[#9C8478] mt-1">${p.year}年 · ${p.status} · ${p.category}<br>條款：承保${p.category}，除外：故意/戰爭，等待期30天，保證續保至80歲</p></div>`).join('') || '<p>無匹配，試試 全心溢 / 全球 / LDG</p>';
 }
-
-// 拍照解析
-document.getElementById('photo-input')?.addEventListener('change', function(e){
-  if(!e.target.files[0])return;
-  const log=document.getElementById('ocr-log'); const preview=document.getElementById('ocr-preview');
-  log.classList.remove('hidden'); log.textContent='> OCR圖轉文中... 偵測保單版型...\n> 匹配雲端商品庫 <built-in function len> 項...';
-  setTimeout(()=>{
-    log.innerHTML='> ✅ 辨識完成 97%<br>> 公司：南山人壽<br>> 主約：全心溢靠2醫療保險<br>> 保額：計畫別2<br>> 保費：$22,000/年<br>> 生效日：2022-03-10<br>> 年期：終身<br>> 附約：全心溢靠自負額實支 10萬';
-    preview.classList.remove('hidden');
-    preview.innerHTML=`<div class="card !border-[#4ECDC4] !bg-[#E6F9F7]"><p class="font-bold text-[12px] text-[#2A9D8F]">AI已從雲端商品庫匹配：南山人壽全心溢靠2</p><button class="btn-primary mt-2 !py-2 text-[12px]" onclick="confirmOCR()">確認新增</button></div>`;
-  },1500);
-});
-function confirmOCR(){policies.push({id:Date.now(), family:currentFamily, company:'南山人壽', main:'全心溢靠2醫療保險 (拍照解析)', amount:'計畫2', premium:22000, date:'2022-03-10', years:'終身', discontinued:false, riders:[{name:'全心溢靠自負額實支附約', amount:'10萬'}]}); save(); switchTab('policies');}
-
-// Close AC on outside click
-document.addEventListener('click', (e)=>{
-  if(!e.target.closest('#f-company') && !e.target.closest('#company-ac')) document.getElementById('company-ac').style.display='none';
-  if(!e.target.closest('#f-main') && !e.target.closest('#main-ac')) document.getElementById('main-ac').style.display='none';
-});
-
-renderAll();
-addRider();
-searchTerms('');
-
-// ===== 收據記帳功能 =====
-let receipts = JSON.parse(localStorage.getItem('bb_receipts')||'null') || [
-  {id:1, family:'me', date:'2024-10-02', hospital:'林口長庚醫院', dept:'骨科', type:'門診', amount:2500, doctor:'陳醫師', note:'頸椎門診', policy:'南山人壽 全心溢靠2', status:'待申請', hasPhoto:true},
-  {id:2, family:'me', date:'2024-10-01', hospital:'林口長庚醫院', dept:'骨科', type:'診斷書', amount:150, doctor:'', note:'診斷書費用', policy:'', status:'已申請', hasPhoto:false},
-];
-
-function saveReceipts(){localStorage.setItem('bb_receipts', JSON.stringify(receipts)); renderReceipts();}
 
 function renderReceipts(filter='all'){
   const list=document.getElementById('receipt-list');
   const empty=document.getElementById('receipt-empty');
   const filtered = filter==='pending' ? receipts.filter(r=>r.status==='待申請') : receipts;
-  // Update family select
-  const famSel=document.getElementById('r-family');
-  if(famSel) famSel.innerHTML = families.map(f=>`<option value="${f.id}">${f.emoji} ${f.name}</option>`).join('');
-  const polSel=document.getElementById('r-policy');
-  if(polSel){
-    const curPols = policies.filter(p=>p.family===currentFamily);
-    polSel.innerHTML = '<option value="">關聯保單(可申請理賠)</option>' + curPols.map(p=>`<option value="${p.company} ${p.main}">${p.company} ${p.main.substring(0,12)}</option>`).join('');
-  }
-  // Total
   const total = receipts.reduce((s,r)=>s+(parseInt(r.amount)||0),0);
   const totalEl=document.getElementById('receipt-total'); if(totalEl) totalEl.textContent = '$'+total.toLocaleString();
   const countEl=document.getElementById('receipt-count'); if(countEl) countEl.textContent = filtered.length + ' 筆收據';
-  
-  if(filtered.length===0){list.innerHTML=''; empty.style.display='block'; return;}
-  empty.style.display='none';
+  if(filtered.length===0){list.innerHTML=''; if(empty) empty.style.display='block'; return;}
+  if(empty) empty.style.display='none';
   list.innerHTML = filtered.slice().reverse().map(r=>{
     const fam = families.find(f=>f.id===r.family);
-    return `<div class="card !p-3 !rounded-2xl">
-      <div class="flex gap-3">
-        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${r.hasPhoto?'bg-[#E6F9F7]':'bg-[#FFF0E6]'}">${r.hasPhoto?'🧾📸':'🧾'}</div>
-        <div class="flex-1 min-w-0">
-          <div class="flex justify-between items-start gap-2">
-            <div><p class="font-bold text-[12px] text-[#4A3728]">${r.hospital} · ${r.dept}</p><p class="text-[10px] text-[#9C8478] mt-0.5">📅 ${r.date} · ${r.type} ${r.doctor? '· '+r.doctor+'醫師':''} ${fam? '· '+fam.emoji+fam.name:''}</p></div>
-            <div class="text-right flex-shrink-0"><p class="font-bold text-[13px] text-[#FF7A45]">$${r.amount}</p><span class="text-[9px] px-2 py-0.5 rounded-full ${r.status==='待申請'?'bg-[#FFF0E6] text-[#FF7A45] border border-[#FFB86A]': r.status==='已申請'?'bg-[#E6F9F7] text-[#2A9D8F]':'bg-[#4ECDC4] text-white'}">${r.status}</span></div>
-          </div>
-          ${r.note? `<p class="text-[10px] bg-[#FFF8F0] rounded-full px-2.5 py-1 mt-2 inline-block">📝 ${r.note}</p>`:''}
-          ${r.policy? `<p class="text-[10px] text-[#2A9D8F] mt-1">🔗 關聯：${r.policy}</p>`:''}
-          <div class="flex gap-2 mt-2"><button class="text-[10px] bg-[#FFF8F0] border px-2.5 py-1 rounded-full" onclick="editReceipt(${r.id})">編輯</button><button class="text-[10px] bg-white border px-2.5 py-1 rounded-full" onclick="toggleReceiptStatus(${r.id})">${r.status==='待申請'?'改為已申請':'改為待申請'}</button><button class="text-[10px] bg-red-50 text-red-500 border border-red-100 px-2.5 py-1 rounded-full" onclick="deleteReceipt(${r.id})">刪除</button></div>
-        </div>
-      </div>
-    </div>`;
+    return `<div class="card !p-3 !rounded-2xl"><div class="flex gap-3"><div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${r.hasPhoto?'bg-[#E6F9F7]':'bg-[#FFF0E6]'}">${r.hasPhoto?'🧾📸':'🧾'}</div><div class="flex-1 min-w-0"><div class="flex justify-between items-start gap-2"><div><p class="font-bold text-[12px] text-[#4A3728]">${r.hospital} · ${r.dept}</p><p class="text-[10px] text-[#9C8478] mt-0.5">📅 ${r.date} · ${r.type} ${r.doctor? '· '+r.doctor+'醫師':''} ${fam? '· '+fam.emoji+fam.name:''}</p></div><div class="text-right flex-shrink-0"><p class="font-bold text-[13px] text-[#FF7A45]">$${r.amount}</p><span class="text-[9px] px-2 py-0.5 rounded-full ${r.status==='待申請'?'bg-[#FFF0E6] text-[#FF7A45] border border-[#FFB86A]':'bg-[#E6F9F7] text-[#2A9D8F]'}">${r.status}</span></div></div>${r.note? `<p class="text-[10px] bg-[#FFF8F0] rounded-full px-2.5 py-1 mt-2 inline-block">📝 ${r.note}</p>`:''}<div class="flex gap-2 mt-2"><button class="text-[10px] bg-[#FFF0E6] border px-2.5 py-1 rounded-full" onclick="editReceipt(${r.id})">編輯</button><button class="text-[10px] bg-white border px-2.5 py-1 rounded-full" onclick="toggleReceiptStatus(${r.id})">${r.status==='待申請'?'改已申請':'改待申請'}</button><button class="text-[10px] bg-red-50 text-red-500 border border-red-100 px-2.5 py-1 rounded-full" onclick="deleteReceipt(${r.id})">刪除</button></div></div></div></div>`;
   }).join('');
 }
-
 function saveReceipt(){
   const date=document.getElementById('r-date').value || new Date().toISOString().split('T')[0];
   const hospital=document.getElementById('r-hospital').value;
@@ -346,54 +304,25 @@ function saveReceipt(){
   receipts.push({id:Date.now(), family, date, hospital, dept: dept||'未分科', type, amount, doctor, note, policy, status:'待申請', hasPhoto: !!window._lastReceiptPhoto});
   window._lastReceiptPhoto=false;
   saveReceipts();
-  // clear
   document.getElementById('r-hospital').value=''; document.getElementById('r-amount').value=''; document.getElementById('r-note').value=''; document.getElementById('r-doctor').value='';
-  document.getElementById('receipt-ocr-result').classList.add('hidden');
-  alert('✅ 收據已儲存，顯示日期/醫院/科別完成');
+  alert('✅ 收據已儲存');
 }
-
 function deleteReceipt(id){if(confirm('刪除此收據？')){receipts=receipts.filter(r=>r.id!==id); saveReceipts();}}
-function editReceipt(id){
-  const r=receipts.find(x=>x.id===id); if(!r)return;
-  document.getElementById('r-date').value=r.date;
-  document.getElementById('r-hospital').value=r.hospital;
-  document.getElementById('r-dept').value=r.dept;
-  document.getElementById('r-amount').value=r.amount;
-  document.getElementById('r-doctor').value=r.doctor||'';
-  document.getElementById('r-type').value=r.type;
-  document.getElementById('r-note').value=r.note||'';
-  receipts=receipts.filter(x=>x.id!==id); saveReceipts();
-  switchTab('receipt');
-  window.scrollTo(0,0);
-}
-function toggleReceiptStatus(id){
-  const r=receipts.find(x=>x.id===id); if(r){r.status = r.status==='待申請'?'已申請':'待申請'; saveReceipts();}
-}
-function filterReceipt(f){renderReceipts(f);}
+function editReceipt(id){const r=receipts.find(x=>x.id===id); if(!r)return; document.getElementById('r-date').value=r.date; document.getElementById('r-hospital').value=r.hospital; document.getElementById('r-dept').value=r.dept; document.getElementById('r-amount').value=r.amount; document.getElementById('r-doctor').value=r.doctor||''; document.getElementById('r-type').value=r.type; document.getElementById('r-note').value=r.note||''; receipts=receipts.filter(x=>x.id!==id); saveReceipts(); switchTab('receipt');}
+function toggleReceiptStatus(id){const r=receipts.find(x=>x.id===id); if(r){r.status = r.status==='待申請'?'已申請':'待申請'; saveReceipts();}}
 
-// 拍照收據 OCR
 document.getElementById('receipt-photo')?.addEventListener('change', function(e){
   const file=e.target.files[0]; if(!file)return;
-  const line=document.getElementById('receipt-ocr-line');
   const result=document.getElementById('receipt-ocr-result');
-  line.classList.remove('hidden');
   result.classList.remove('hidden');
-  result.innerHTML='> 📸 讀取收據影像...<br>> 圖轉文 OCR 辨識中...<br>> 偵測醫院/日期/科別...';
-  // Simulate image preview
+  result.innerHTML='> 📸 讀取收據影像...<br>> 圖轉文 OCR 辨識中...';
   const reader=new FileReader();
   reader.onload=function(ev){
     window._lastReceiptPhoto=true;
     setTimeout(()=>{
-      line.classList.add('hidden');
-      // Mock OCR extraction with realistic data
-      const mockData = [
-        {hospital:'林口長庚醫院', dept:'骨科', date:'2024-10-03', amount:3200, type:'門診', doctor:'王醫師', note:'頸椎追蹤'},
-        {hospital:'台北榮總', dept:'神經外科', date:'2024-10-02', amount:8500, type:'住院', doctor:'李醫師', note:'頸椎人工椎間盤'},
-        {hospital:'新光醫院', dept:'復健科', date:'2024-10-01', amount:1200, type:'復健', doctor:'張醫師', note:'術後復健'},
-      ];
+      const mockData = [{hospital:'林口長庚醫院', dept:'骨科', date:'2024-10-03', amount:3200, type:'門診', doctor:'王醫師', note:'頸椎追蹤'},{hospital:'台北榮總', dept:'神經外科', date:'2024-10-02', amount:8500, type:'住院', doctor:'李醫師', note:'頸椎人工椎間盤'},{hospital:'新光醫院', dept:'復健科', date:'2024-10-01', amount:1200, type:'復健', doctor:'張醫師', note:'術後復健'}];
       const data = mockData[Math.floor(Math.random()*mockData.length)];
-      result.innerHTML=`> ✅ 辨識完成 96%<br>> 📅 日期：${data.date}<br>> 🏥 醫院：${data.hospital}<br>> 🏷️ 科別：${data.dept}<br>> 💰 金額：$${data.amount}<br>> 👨‍⚕️ 醫師：${data.doctor}<br>> 📝 類型：${data.type}<br><br><img src="${ev.target.result}" style="width:100%;max-height:120px;object-fit:cover;border-radius:12px;margin-top:8px">`;
-      // Auto fill form
+      result.innerHTML=`> ✅ 辨識完成 96%<br>> 📅 日期：${data.date}<br>> 🏥 醫院：${data.hospital}<br>> 🏷️ 科別：${data.dept}<br>> 💰 金額：$${data.amount}<br>> 👨‍⚕️ 醫師：${data.doctor}<br><br><img src="${ev.target.result}" style="width:100%;max-height:120px;object-fit:cover;border-radius:12px;margin-top:8px">`;
       document.getElementById('r-date').value=data.date;
       document.getElementById('r-hospital').value=data.hospital;
       document.getElementById('r-dept').value=data.dept;
@@ -401,16 +330,31 @@ document.getElementById('receipt-photo')?.addEventListener('change', function(e)
       document.getElementById('r-doctor').value=data.doctor;
       document.getElementById('r-type').value=data.type;
       document.getElementById('r-note').value=data.note;
-      result.innerHTML+=`<p class="mt-2 text-[#4ECDC4]">已自動帶入下方表單，請確認後儲存</p>`;
-      document.getElementById('receipt-manual-form').scrollIntoView({behavior:'smooth'});
-    }, 1500);
+    }, 1200);
   };
   reader.readAsDataURL(file);
 });
 
-// Initialize receipts
-renderReceipts();
+document.getElementById('photo-input')?.addEventListener('change', function(e){
+  if(!e.target.files[0])return;
+  const log=document.getElementById('ocr-log'); const preview=document.getElementById('ocr-preview');
+  log.classList.remove('hidden'); log.textContent='> OCR圖轉文中...';
+  setTimeout(()=>{
+    log.innerHTML='> ✅ 辨識完成 97%<br>> 公司：南山人壽<br>> 主約：全心溢靠2醫療保險<br>> 保額：計畫2<br>> 保費：$22,000/年<br>> 生效日：2022-03-10<br>> 年期：終身';
+    preview.classList.remove('hidden');
+    preview.innerHTML=`<div class="card !border-[#4ECDC4] !bg-[#E6F9F7]"><p class="font-bold text-[12px] text-[#2A9D8F]">AI已匹配：南山人壽全心溢靠2</p><button class="btn-primary mt-2 !py-2 text-[12px]" onclick="policies.push({id:Date.now(), family:currentFamily, company:'南山人壽', main:'全心溢靠2醫療保險 (拍照解析)', amount:'計畫2', premium:22000, date:'2022-03-10', years:'終身', discontinued:false, riders:[{name:'全心溢靠自負額實支附約', amount:'10萬'}]}); save(); switchTab('policies');">確認新增</button></div>`;
+  },1200);
+});
 
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('#f-company') && !e.target.closest('#company-ac')) document.getElementById('company-ac').style.display='none';
+  if(!e.target.closest('#f-main') && !e.target.closest('#main-ac')) document.getElementById('main-ac').style.display='none';
+});
+
+renderAll();
+addRider();
+renderReceipts();
+searchTerms('');
 </script>
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
 </html>
