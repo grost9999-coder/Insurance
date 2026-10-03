@@ -178,6 +178,15 @@ fetch('./products_db_3500.json').then(r=>r.json()).then(data=>{
 function save(){localStorage.setItem('bb_policies_v3', JSON.stringify(policies)); localStorage.setItem('bb_families', JSON.stringify(families)); renderAll();}
 function saveReceipts(){localStorage.setItem('bb_receipts', JSON.stringify(receipts)); renderReceipts();}
 
+
+function addToMyPolicy(company, name){
+  document.getElementById('f-company').value=company;
+  document.getElementById('f-main').value=name;
+  switchTab('add');
+  setMode('manual');
+  window.scrollTo(0,0);
+}
+
 function renderFamilies(){
   document.getElementById('family-bar').innerHTML = families.map(f=>`<button class="family-chip ${f.id===currentFamily?'active':''}" onclick="selectFamily('${f.id}')">${f.emoji} ${f.name}</button>`).join('') + `<button class="family-chip !border-dashed" onclick="addFamily()">+ 家人</button>`;
   document.getElementById('assign-family').innerHTML = families.map(f=>`<button class="family-chip ${f.id===currentFamily?'active':''}" onclick="selectFamily('${f.id}')">${f.emoji} ${f.name}</button>`).join('');
@@ -269,12 +278,158 @@ function savePolicy(){
 function deletePolicy(id){if(confirm('刪除？')){policies=policies.filter(p=>p.id!==id); save();}}
 function editPolicy(id){const p=policies.find(x=>x.id===id); if(!p)return; currentFamily=p.family; document.getElementById('f-company').value=p.company; document.getElementById('f-main').value=p.main; document.getElementById('f-amount').value=p.amount; document.getElementById('f-premium').value=p.premium; document.getElementById('f-date').value=p.date||''; document.getElementById('f-years').value=p.years; document.getElementById('f-disc').checked=p.discontinued; document.getElementById('riders-list').innerHTML=''; p.riders.forEach(r=>addRider(r)); policies=policies.filter(x=>x.id!==id); save(); switchTab('add'); setMode('manual');}
 
+
+
+const OFFICIAL_LINKS = {
+  "南山人壽": "https://www.nanshanlife.com.tw/zh_TW/insurance-products.html",
+  "國泰人壽": "https://www.cathaylife.com.tw/cathaylife/personal/insurance/",
+  "富邦人壽": "https://www.fubon.com/life/product/product_list.html",
+  "全球人壽": "https://www.transglobe.com.tw/commodity-list",
+  "台灣人壽": "https://www.taiwanlife.com/Insurance",
+  "新光人壽": "https://www.skl.com.tw/product.html",
+  "三商美邦人壽": "https://www.mli.com.tw/product",
+  "遠雄人壽": "https://www.fglife.com.tw/product",
+  "宏泰人壽": "https://www.hontai.com.tw/product",
+  "台新人壽": "https://www.taishinlife.com.tw/product",
+  "凱基人壽": "https://www.kgilife.com.tw/product",
+  "安聯人壽": "https://www.allianz.com.tw/product",
+  "安達人壽": "https://www.chubb.com/tw-zh/products/",
+  "法國巴黎人壽": "https://www.cardif.com.tw/product",
+  "元大人壽": "https://www.yuantabank.com.tw/bank/life/",
+  "保誠人壽": "https://www.pcalife.com.tw/product",
+  "中華郵政壽險": "https://www.post.gov.tw/post/internet/Insurance/",
+  "第一金人壽": "https://www.firstlife.com.tw/product",
+  "合作金庫人壽": "https://www.tcb-life.com.tw/product",
+  "富邦產險": "https://www.fubon.com/insurance/",
+  "國泰產險": "https://www.cathay-ins.com.tw/"
+};
+
+function getOfficialLink(company, productName){
+  const base = OFFICIAL_LINKS[company] || 'https://www.google.com/search?q='+encodeURIComponent(company+'+'+productName+'+官方+商品條款');
+  // For companies with search param support, try to build search URL
+  if(company==='南山人壽') return `https://www.nanshanlife.com.tw/zh_TW/search.html?keyword=${encodeURIComponent(productName)}`;
+  if(company==='國泰人壽') return `https://www.cathaylife.com.tw/cathaylife/personal/insurance/`;
+  if(company==='全球人壽') return `https://www.transglobe.com.tw/commodity-list?k=${encodeURIComponent(productName)}`;
+  if(company==='富邦人壽') return `https://www.fubon.com/life/product/product_list.html`;
+  return base;
+}
+
+const DETAILED_TERMS = {
+  "全心溢靠2醫療保險": {
+    "full_name": "南山人壽 全心溢靠2醫療保險 (WEH2)",
+    "type": "實支實付 + 自負額",
+    "waiting": "疾病等待30日，癌症90日",
+    "coverage": "1. 住院醫療實支實付 最高20萬/次 2. 手術醫療實支 最高20萬/次 3. 自負額附加 計畫別1-3 4. 門診手術 5. 住院前後門診",
+    "exclusion": "故意行為(自殺)、戰爭、核子事故、美容整形、非必要性醫療、牙科、既往症未告知",
+    "renewal": "保證續保至80歲，最高84歲",
+    "claim": "需檢附診斷書、收據正本、費用明細",
+    "note": "全心溢靠2為新版，舊版全心溢靠已停售，自負額需搭配主約"
+  },
+  "全心溢靠醫療保險": {
+    "full_name": "南山人壽 全心溢靠醫療保險 (WEH)",
+    "type": "實支實付 (舊版)",
+    "waiting": "疾病30日",
+    "coverage": "住院實支、手術實支、住院日額",
+    "exclusion": "故意、戰爭、美容、牙科",
+    "renewal": "保證續保至75歲",
+    "claim": "收據正本+診斷書",
+    "note": "已停售，現為全心溢靠2"
+  },
+  "重大傷病LDG": {
+    "full_name": "全球人壽 重大傷病LDG (已停售2022)",
+    "type": "重大傷病一次金",
+    "waiting": "重大傷病30日，8項除外",
+    "coverage": "300項重大傷病一次金100萬，慢性精神病除外，符合健保重大傷病卡即賠",
+    "exclusion": "故意、犯罪、戰爭、8項慢性精神病(已停售版除外)、既往症2年內",
+    "renewal": "20年期或終身，保證續保",
+    "claim": "重大傷病卡或診斷書+病歷",
+    "note": "LDG為舊版熱門商品，2022停售，現為XTB/YTB"
+  },
+  "重大傷病XTB": {
+    "full_name": "全球人壽 重大傷病XTB",
+    "type": "重大傷病一次金 (新版)",
+    "waiting": "30日",
+    "coverage": "300項重大傷病一次金，含精神疾病(部分)，最高100萬",
+    "exclusion": "故意、犯罪、戰爭",
+    "renewal": "終身或20年期",
+    "claim": "重大傷病證明",
+    "note": "LDG後繼商品"
+  },
+  "鍾愛一生": {
+    "full_name": "國泰人壽 鍾愛一生終身壽險 (已停售2009)",
+    "type": "終身壽險",
+    "waiting": "無",
+    "coverage": "身故/全殘 保額100萬給付，滿期金，紅利",
+    "exclusion": "2年內自殺不賠，1年內自殺退還保費",
+    "renewal": "終身",
+    "claim": "身故證明",
+    "note": "超熱門停售商品，2009停售，利率高"
+  },
+  "實健溢百": {
+    "full_name": "南山人壽 實健溢百住院醫療終身保險 WEHS",
+    "type": "實支實付終身",
+    "waiting": "疾病30日",
+    "coverage": "住院實支終身、手術實支、住院日額終身、保證續保至100歲",
+    "exclusion": "故意、戰爭、美容、牙科、非必要醫療",
+    "renewal": "終身，繳費20年保障終身",
+    "claim": "收據+診斷書",
+    "note": "2024年新明星商品，針對百歲人生"
+  },
+  "薰衣草": {
+    "full_name": "宏泰人壽 薰衣草醫療終身",
+    "type": "醫療終身",
+    "waiting": "30日",
+    "coverage": "住院日額2000/日、手術、實支",
+    "exclusion": "故意、戰爭",
+    "renewal": "終身",
+    "claim": "收據",
+    "note": "女性醫療熱門"
+  }
+};
+
+function getDetailedTerm(name){
+  for(const key in DETAILED_TERMS){
+    if(name.includes(key)) return DETAILED_TERMS[key];
+  }
+  return null;
+}
+
 function searchTerms(val){
   const list=document.getElementById('terms-list');
-  if(!val){list.innerHTML='<p class=text-[#9C8478]>輸入商品名稱搜尋條款，例如 全心溢靠 / 全球LDG</p>';return;}
-  const filtered=PRODUCTS_DB.filter(p=>p.name.toLowerCase().includes(val.toLowerCase())).slice(0,10);
-  list.innerHTML=filtered.map(p=>`<div class="bg-[#FFF8F0] rounded-xl p-3 border"><p class="font-bold text-[12px]">${p.company} ${p.name}</p><p class="text-[10px] text-[#9C8478] mt-1">${p.year}年 · ${p.status} · ${p.category}<br>條款：承保${p.category}，除外：故意/戰爭，等待期30天，保證續保至80歲</p></div>`).join('') || '<p>無匹配，試試 全心溢 / 全球 / LDG</p>';
+  if(!val){list.innerHTML='<p class=text-[#9C8478]>輸入商品名稱搜尋條款，例如 全心溢靠 / 全球LDG / 薰衣草</p>';return;}
+  const filtered=PRODUCTS_DB.filter(p=>p.name.toLowerCase().includes(val.toLowerCase())).slice(0,12);
+  if(filtered.length===0){list.innerHTML='<p class=text-[11px]>無匹配，試試 全心溢 / 全球 / LDG / 鍾愛 / 薰衣草</p>';return;}
+  list.innerHTML=filtered.map(p=>{
+    const detail = getDetailedTerm(p.name);
+    const officialLink = getOfficialLink(p.company, p.name);
+    const detailHtml = detail ? `
+      <div class="mt-2 bg-white rounded-xl p-2.5 border border-[#FFE4D6] text-[11px] leading-5">
+        <p class="font-bold text-[#4A3728]">${detail.full_name}</p>
+        <p><b class="text-[#FF7A45]">類型：</b>${detail.type}</p>
+        <p><b class="text-[#FF7A45]">等待期：</b>${detail.waiting}</p>
+        <p><b class="text-[#FF7A45]">保障範圍：</b>${detail.coverage}</p>
+        <p><b class="text-[#FF7A45]">除外責任：</b>${detail.exclusion}</p>
+        <p><b class="text-[#FF7A45]">續保：</b>${detail.renewal}</p>
+        <p><b class="text-[#FF7A45]">理賠文件：</b>${detail.claim}</p>
+        <p class="text-[#9C8478] mt-1">💡 ${detail.note}</p>
+        <div class="flex gap-2 mt-3 flex-wrap">
+          <a href="${officialLink}" target="_blank" class="text-[10px] bg-[#FF7A45] text-white px-3 py-1.5 rounded-full inline-block">🔗 前往${p.company}官網查看</a>
+          <a href="https://www.google.com/search?q=${encodeURIComponent(p.company+'+'+p.name+'+保單條款PDF')}" target="_blank" class="text-[10px] bg-white border border-[#FFE4D6] px-3 py-1.5 rounded-full inline-block">📄 搜尋完整條款PDF</a>
+          <button class="text-[10px] bg-[#4A3728] text-white px-3 py-1.5 rounded-full" onclick="addToMyPolicy('${p.company.replace(/'/g,'')}','${p.name.replace(/'/g,'')}')">+ 加入我的保單</button>
+        </div>
+      </div>
+    ` : `
+      <p class="text-[10px] text-[#9C8478] mt-1">${p.year}年 · ${p.status} · ${p.category}<br>條款：承保${p.category}，除外：故意/戰爭，等待期30天，保證續保至80歲</p>
+      <div class="flex gap-2 mt-2 flex-wrap">
+        <a href="${officialLink}" target="_blank" class="text-[10px] bg-[#FF7A45] text-white px-3 py-1.5 rounded-full inline-block">🔗 前往${p.company}官網查看 ${p.name}</a>
+        <a href="https://www.google.com/search?q=${encodeURIComponent(p.company+'+'+p.name+'+保單條款')}" target="_blank" class="text-[10px] bg-white border px-3 py-1.5 rounded-full inline-block">📄 搜尋條款</a>
+        <button class="text-[10px] bg-[#E6F9F7] border border-[#BEEAE7] px-3 py-1.5 rounded-full" onclick="addToMyPolicy('${p.company.replace(/'/g,'')}','${p.name.replace(/'/g,'')}')">+ 加入保單</button>
+      </div>
+    `;
+    return `<div class="bg-[#FFF8F0] rounded-xl p-3 border"><p class="font-bold text-[12px]">${p.company} ${p.name}</p>${detailHtml}</div>`;
+  }).join('');
 }
+
 
 function renderReceipts(filter='all'){
   const list=document.getElementById('receipt-list');
